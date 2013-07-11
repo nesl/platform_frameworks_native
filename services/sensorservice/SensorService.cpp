@@ -248,6 +248,8 @@ bool SensorService::threadLoop()
     SensorDevice& device(SensorDevice::getInstance());
     const size_t vcount = mVirtualSensorList.size();
 
+    ALOGD("In SensorService::threadLoop: minBufferSize = %d", minBufferSize);
+
     ssize_t count;
     do {
         count = device.poll(buffer, numEventMax);
@@ -302,10 +304,14 @@ bool SensorService::threadLoop()
         const SortedVector< wp<SensorEventConnection> > activeConnections(
                 getActiveConnections());
         size_t numConnections = activeConnections.size();
+
+        ALOGD("SensorService::threadLoop::numActiveConnections = %d", numConnections);
+
         for (size_t i=0 ; i<numConnections ; i++) {
             sp<SensorEventConnection> connection(
                     activeConnections[i].promote());
             if (connection != 0) {
+                ALOGD("In ThreadLoop: AppID = %d\n",IPCThreadState::self()->getCallingPid());
                 connection->sendEvents(buffer, count, scratch);
             }
         }
@@ -607,6 +613,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
 {
     // filter out events not for this connection
     size_t count = 0;
+
     if (scratch) {
         Mutex::Autolock _l(mConnectionLock);
         size_t i=0;
@@ -625,6 +632,21 @@ status_t SensorService::SensorEventConnection::sendEvents(
         count = numEvents;
     }
 
+    privacy_vec_t param;
+    param.action = ACTION_CONSTANT;
+    param.constantValue = 1;
+    ALOGD("-----Calling transformData with ---");
+    scratch = mSensorPerturb.transformData(SENSOR_TYPE_ACCELEROMETER, scratch, count, &param);
+
+    size_t j=0;
+    ALOGD("-----Printing Scratch with NumEvent = %d ---",count);
+
+    while(j < count) {
+        ALOGD("SType = %d: data-x = %f, data-y = %f, data-z = %f", scratch[j].type, scratch[j].data[0], scratch[j].data[1], scratch[j].data[2]);
+        j++;
+    }
+
+    ASensorEvent* temp  = reinterpret_cast<ASensorEvent*>(scratch);
     // NOTE: ASensorEvent and sensors_event_t are the same type
     ssize_t size = SensorEventQueue::write(mChannel,
             reinterpret_cast<ASensorEvent const*>(scratch), count);
