@@ -35,6 +35,8 @@
 
 #include "SensorInterface.h"
 
+#include "SensorPerturb.h"
+
 // ---------------------------------------------------------------------------
 
 #define DEBUG_CONNECTIONS   false
@@ -78,6 +80,7 @@ class SensorService :
         sp<SensorService> const mService;
         sp<BitTube> const mChannel;
         uid_t mUid;
+        SensorPerturb mSensorPerturb;
         mutable Mutex mConnectionLock;
 
         // protected by SensorService::mLock
