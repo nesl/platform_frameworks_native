@@ -21,45 +21,55 @@
 namespace android {
 // ---------------------------------------------------------------------------
 
-    key_t PrivacyRules::generateKey(uid_t uid, int32_t type, String16 appName) {
+    key_t PrivacyRules::generateKey(uid_t uid, int32_t type, const char* appName) {
         key_t temp; 
         temp.uid = uid;
         temp.type = type;
-        temp.appName = appName;
+        strcpy(temp.appName, appName);
         return temp;
     }
     
     // need to figure out a way to include appName
     // or to use a builtin hash function
-    uint32_t PrivacyRules::hash_type(key_t key) { 
+    uint32_t PrivacyRules::hash_type(key_t toSearchKey) { 
         uint32_t hash = 0;
-        /*
-        int len = strlen16(key.appName);
-        String16* str = &key.appName;
+        int i;
+        int len = strlen(toSearchKey.appName);
 
-        while (len--)
-            hash = hash * 31 + *str++;
-        */
-        hash = hash + key.uid;
-        //hash = hash + key.type;
+        for(i = 0; i < len; i++) {
+            hash = hash + toSearchKey.appName[i];
+        }
+        hash = hash + toSearchKey.uid;
+        hash = hash + toSearchKey.type;
+
         return hash;
     }
 
-    size_t PrivacyRules::addRule(key_t key, privacy_vec_t value) {
-       return rules.add(PrivacyRules::hash_type(key), key_value_pair_t<key_t,privacy_vec_t>(key, value));
+    size_t PrivacyRules::addRule(key_t toSearchKey, privacy_vec_t value) {
+       return rules.add(PrivacyRules::hash_type(toSearchKey), key_value_pair_t<key_t,privacy_vec_t>(toSearchKey, value));
     }
 
-    const privacy_vec_t* PrivacyRules::findRule(key_t key) {
+    const privacy_vec_t* PrivacyRules::findRule(key_t toSearchKey) {
         ssize_t index = -1;
-        index = rules.find(index, PrivacyRules::hash_type(key), key);
-        if(index != -1)
-            return &rules.entryAt(index).value;
-        else
-            return NULL;
+        bool notFound = true;
+        key_t temp;
+
+        while(notFound) {
+            index = rules.find(index, PrivacyRules::hash_type(toSearchKey), toSearchKey);
+            if(index != -1) {
+                temp = rules.entryAt(index).key;
+                if((temp.type == toSearchKey.type) && (temp.uid = toSearchKey.uid) && (strcmp(temp.appName, toSearchKey.appName) == 0)) {
+                    notFound = false;
+                }
+            } 
+            else
+                return NULL;
+        }
+        return &rules.entryAt(index).value;
     }
 
-    bool PrivacyRules::removeRule(key_t key) {
-        ssize_t index = rules.find(index, PrivacyRules::hash_type(key), key);
+    bool PrivacyRules::removeRule(key_t toSearchKey) {
+        ssize_t index = rules.find(index, PrivacyRules::hash_type(toSearchKey), toSearchKey);
         if(index != -1) {
             rules.removeAt(index);
             return true;
