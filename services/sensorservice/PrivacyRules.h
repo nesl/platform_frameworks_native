@@ -29,10 +29,23 @@
 namespace android {
 // ---------------------------------------------------------------------------
 
-typedef struct {
+typedef struct ruleKey {
     uid_t uid;
     int32_t type;
     char appName[32];
+
+    bool operator ==(const ruleKey& other) const {
+        if((other.uid == uid) && (other.type == type) && (strcmp(other.appName, appName) == 0))
+            return true;
+        else
+            return false;
+    }
+    bool operator !=(const ruleKey& other) const {
+        if((other.uid == uid) && (other.type == type) && (strcmp(other.appName, appName) == 0))
+            return false;
+        else
+            return true;
+    }
 } key_t;
 
 typedef key_value_pair_t<key_t, privacy_vec_t> entry;
