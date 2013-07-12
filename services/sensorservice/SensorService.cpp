@@ -646,14 +646,19 @@ status_t SensorService::SensorEventConnection::sendEvents(
         j++;
     }
 
-    ASensorEvent* temp  = reinterpret_cast<ASensorEvent*>(scratch);
-    // NOTE: ASensorEvent and sensors_event_t are the same type
-    ssize_t size = SensorEventQueue::write(mChannel,
-            reinterpret_cast<ASensorEvent const*>(scratch), count);
-    if (size == -EAGAIN) {
-        // the destination doesn't accept events anymore, it's probably
-        // full. For now, we just drop the events on the floor.
-        //ALOGW("dropping %d events on the floor", count);
+    //ASensorEvent* temp  = reinterpret_cast<ASensorEvent*>(scratch);
+    ssize_t size = 0;
+    if(scratch) {
+        // NOTE: ASensorEvent and sensors_event_t are the same type
+        size = SensorEventQueue::write(mChannel,
+                reinterpret_cast<ASensorEvent const*>(scratch), count);
+        if (size == -EAGAIN) {
+            // the destination doesn't accept events anymore, it's probably
+            // full. For now, we just drop the events on the floor.
+            //ALOGW("dropping %d events on the floor", count);
+            return size;
+        }
+    } else {
         return size;
     }
 

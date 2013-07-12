@@ -64,6 +64,12 @@ sensors_event_t* SensorPerturb::constantData(
     return buffer;
 }
 
+sensors_event_t* SensorPerturb::suppressData(
+        int32_t type, privacy_vec_t* param)
+{
+    return NULL;
+}
+
 sensors_event_t* SensorPerturb::transformData(
         int32_t type, sensors_event_t* buffer, size_t count, privacy_vec_t* param)
 {
@@ -71,6 +77,9 @@ sensors_event_t* SensorPerturb::transformData(
 
     if(param->action == ACTION_CONSTANT) {
         return SensorPerturb::constantData(type, buffer, count, param);
+    }
+    else if(param->action == ACTION_SUPPRESS) {
+        return SensorPerturb::suppressData(type, param);
     }
     else 
         return buffer;

@@ -55,6 +55,7 @@ typedef struct {
 class SensorPerturb {
 private:
     sensors_event_t* constantData(int32_t type, sensors_event_t* buffer, size_t count, privacy_vec_t* param);
+    sensors_event_t* suppressData(int32_t type, privacy_vec_t* param);
 public:
     SensorPerturb();
     sensors_event_t* transformData(int32_t type, sensors_event_t* buffer, size_t count, privacy_vec_t* param);
