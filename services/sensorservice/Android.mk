@@ -14,6 +14,7 @@ LOCAL_SRC_FILES:= \
     SensorInterface.cpp \
     SensorService.cpp \
     SensorPerturb.cpp \
+    PrivacyRules.cpp \
 
 
 LOCAL_CFLAGS:= -DLOG_TAG=\"SensorService\"
