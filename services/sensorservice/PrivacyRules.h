@@ -32,7 +32,7 @@ namespace android {
 typedef struct {
     uid_t uid;
     int32_t type;
-    String16 appName;
+    char appName[32];
 } key_t;
 
 typedef key_value_pair_t<key_t, privacy_vec_t> entry;
@@ -41,7 +41,7 @@ typedef BasicHashtable<key_t, entry> RulesHashTable;
 class PrivacyRules {
 RulesHashTable rules;
 public:
-    key_t generateKey(uid_t uid, int32_t type, String16 appName);
+    key_t generateKey(uid_t uid, int32_t type, const char* appName);
     size_t addRule(key_t key, privacy_vec_t value);
     const privacy_vec_t* findRule(key_t key);
     bool removeRule(key_t key);
