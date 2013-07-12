@@ -158,6 +158,27 @@ void SensorService::onFirstRef()
             mInitCheck = NO_ERROR;
         }
     }
+    // Delete this later 
+    PrivacyRules mPrivacyRules;
+
+    key_t key1 = mPrivacyRules.generateKey(1000, 1, "system");
+    privacy_vec_t param1;
+    param1.action = ACTION_SUPPRESS;
+    param1.constantValue = 20;
+    mPrivacyRules.addRule(key1, param1);
+
+    key_t key2 = mPrivacyRules.generateKey(2000, 2, "testApp");
+    privacy_vec_t param2;
+    param2.action = ACTION_CONSTANT;
+    param2.constantValue = 1;
+    mPrivacyRules.addRule(key2, param2);
+
+    const privacy_vec_t* temp1 = mPrivacyRules.findRule(key1);
+    ALOGD("Action = %d", temp1->action);
+
+    const privacy_vec_t* temp2 = mPrivacyRules.findRule(key2);
+    ALOGD("Action = %d, constantVal = %f", temp2->action, temp2->constantValue);
+
 }
 
 void SensorService::registerSensor(SensorInterface* s)

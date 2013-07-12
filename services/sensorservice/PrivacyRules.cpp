@@ -65,6 +65,7 @@ namespace android {
             else
                 return NULL;
         }
+        ALOGD("In PrivacyRules: constantValue = %f",rules.entryAt(index).value.constantValue);
         return &rules.entryAt(index).value;
     }
 

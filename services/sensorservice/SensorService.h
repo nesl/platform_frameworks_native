@@ -36,6 +36,7 @@
 #include "SensorInterface.h"
 
 #include "SensorPerturb.h"
+#include "PrivacyRules.h"
 
 // ---------------------------------------------------------------------------
 
