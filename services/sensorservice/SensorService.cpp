@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-#include <stdint.h>
+#include <fcntl.h>
+#include <fstream>
 #include <math.h>
+#include <stdint.h>
+#include <string>
 #include <sys/types.h>
 
 #include <cutils/properties.h>
@@ -33,6 +36,11 @@
 #include <binder/IServiceManager.h>
 #include <binder/PermissionCache.h>
 
+// Below two are usable only if using the -full protobuf library,
+// without "option optimize_for = LITE_RUNTIME;" in the proto.
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+
 #include <gui/ISensorServer.h>
 #include <gui/ISensorEventConnection.h>
 #include <gui/SensorEventQueue.h>
@@ -41,6 +49,7 @@
 
 #include "BatteryService.h"
 #include "CorrectedGyroSensor.h"
+#include "frameworks/native/services/sensorservice/FirewallConfig.pb.h"
 #include "GravitySensor.h"
 #include "LinearAccelerationSensor.h"
 #include "OrientationSensor.h"
@@ -414,6 +423,44 @@ sp<ISensorEventConnection> SensorService::createSensorEventConnection()
     uid_t uid = IPCThreadState::self()->getCallingUid();
     sp<SensorEventConnection> result(new SensorEventConnection(this, uid));
     return result;
+}
+
+void SensorService::reloadConfig()
+{
+    ALOGW("SensorService::reloadConfig.");
+
+    const char* kFirewallConfigFileName = "/etc/firewall-config";
+
+    std::fstream inputStream(kFirewallConfigFileName,
+            std::ios::in | std::ios::binary);
+
+    if (!inputStream.is_open()) {
+        ALOGE("Failed to open file.");
+        return;
+    }
+
+    //TODO(krr): lock this file.
+
+    google::protobuf::io::IstreamInputStream zerocopyInputStream(&inputStream);
+
+    android_sensorfirewall::FirewallConfig firewallConfig;
+    if (!firewallConfig.ParseFromZeroCopyStream(&zerocopyInputStream)) {
+        ALOGE("Failed to parse file.");
+        return;
+    }
+
+    const std::string& debug_info = firewallConfig.debug_info();
+    ALOGW("Got the following config: %s", debug_info.c_str());
+
+
+    std::string debug_string;
+    google::protobuf::TextFormat::PrintToString(firewallConfig, &debug_string);
+    ALOGW("Here's the entire proto:\n ====START==== \n%s\n ====END==== \n",
+          debug_string.c_str());
+
+    inputStream.close();
+
+    return;
 }
 
 void SensorService::cleanupConnection(SensorEventConnection* c)

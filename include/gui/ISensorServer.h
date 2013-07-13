@@ -38,6 +38,7 @@ public:
 
     virtual Vector<Sensor> getSensorList() = 0;
     virtual sp<ISensorEventConnection> createSensorEventConnection() = 0;
+    virtual void reloadConfig() = 0;
 };
 
 // ----------------------------------------------------------------------------
