@@ -72,6 +72,7 @@ public:
 
     virtual void reloadConfig()
     {
+        ALOGD("BpSensorServer::reloadConfig.");
         Parcel data, reply;
         data.writeInterfaceToken(ISensorServer::getInterfaceDescriptor());
         remote()->transact(RELOAD_CONFIG, data, &reply);
@@ -103,6 +104,7 @@ status_t BnSensorServer::onTransact(
             return NO_ERROR;
         } break;
         case RELOAD_CONFIG: {
+            ALOGD("BnSensorServer::onTransact. case RELOAD_CONFIG");
             CHECK_INTERFACE(ISensorServer, data, reply);
             reloadConfig();
             return NO_ERROR;
