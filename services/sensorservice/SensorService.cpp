@@ -278,8 +278,6 @@ bool SensorService::threadLoop()
     SensorDevice& device(SensorDevice::getInstance());
     const size_t vcount = mVirtualSensorList.size();
 
-    ALOGD("In SensorService::threadLoop: minBufferSize = %d", minBufferSize);
-
     ssize_t count;
     do {
         count = device.poll(buffer, numEventMax);
@@ -334,14 +332,10 @@ bool SensorService::threadLoop()
         const SortedVector< wp<SensorEventConnection> > activeConnections(
                 getActiveConnections());
         size_t numConnections = activeConnections.size();
-
-        ALOGD("SensorService::threadLoop::numActiveConnections = %d", numConnections);
-
         for (size_t i=0 ; i<numConnections ; i++) {
             sp<SensorEventConnection> connection(
                     activeConnections[i].promote());
             if (connection != 0) {
-                ALOGD("In ThreadLoop: AppID = %d\n",IPCThreadState::self()->getCallingPid());
                 connection->sendEvents(buffer, count, scratch);
             }
         }
@@ -427,7 +421,7 @@ sp<ISensorEventConnection> SensorService::createSensorEventConnection()
 
 void SensorService::reloadConfig()
 {
-    ALOGW("SensorService::reloadConfig.");
+    ALOGD("SensorService::reloadConfig.");
 
     const char* kFirewallConfigFileName = "/etc/firewall-config";
 
@@ -450,12 +444,12 @@ void SensorService::reloadConfig()
     }
 
     const std::string& debug_info = firewallConfig.debug_info();
-    ALOGW("Got the following config: %s", debug_info.c_str());
+    ALOGD("Got the following config: %s", debug_info.c_str());
 
 
     std::string debug_string;
     google::protobuf::TextFormat::PrintToString(firewallConfig, &debug_string);
-    ALOGW("Here's the entire proto:\n ====START==== \n%s\n ====END==== \n",
+    ALOGD("Here's the entire proto:\n ====START==== \n%s\n ====END==== \n",
           debug_string.c_str());
 
     inputStream.close();

@@ -147,6 +147,7 @@ sp<SensorEventQueue> SensorManager::createEventQueue()
 }
 
 void SensorManager::reloadConfig() {
+    ALOGD("SensorManager.cpp::reloadConfig");
     if (assertStateLocked() == NO_ERROR) {
         mSensorServer->reloadConfig();
     }
