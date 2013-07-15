@@ -74,7 +74,7 @@ public:
     {
         Parcel data, reply;
         data.writeInterfaceToken(ISensorServer::getInterfaceDescriptor());
-        remote()->transact(CREATE_SENSOR_EVENT_CONNECTION, data, &reply);
+        remote()->transact(RELOAD_CONFIG, data, &reply);
     }
 };
 
