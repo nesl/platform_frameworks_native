@@ -5,7 +5,7 @@
 
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
-#include "frameworks/native/services/sensorservice/FirewallConfig.pb.h"
+#include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
 
 using android_sensorfirewall::FirewallConfig;
 

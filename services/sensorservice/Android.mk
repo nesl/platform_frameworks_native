@@ -4,7 +4,7 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES:= \
 	BatteryService.cpp \
 	CorrectedGyroSensor.cpp \
-	FirewallConfig.proto \
+	FirewallConfigMessages.proto \
 	Fusion.cpp \
 	GravitySensor.cpp \
 	LinearAccelerationSensor.cpp \
@@ -44,7 +44,7 @@ include $(BUILD_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES:= \
-	FirewallConfig.proto \
+	FirewallConfigMessages.proto \
 	FirewallConfig.cpp \
 
 LOCAL_CFLAGS:= -DLOG_TAG=\"SensorFirewall-Config\"
