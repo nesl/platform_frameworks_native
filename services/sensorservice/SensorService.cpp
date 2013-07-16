@@ -418,6 +418,7 @@ sp<ISensorEventConnection> SensorService::createSensorEventConnection()
 
 void SensorService::reloadConfig()
 {
+    //TODO(krr): Only the root (uid=0) should be able to invoke this.
     ALOGD("SensorService::reloadConfig.");
 
     const char* kFirewallConfigFileName = "/etc/firewall-config";
