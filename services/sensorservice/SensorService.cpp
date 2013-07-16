@@ -36,9 +36,6 @@
 #include <binder/IServiceManager.h>
 #include <binder/PermissionCache.h>
 
-// Below two are usable only if using the -full protobuf library,
-// without "option optimize_for = LITE_RUNTIME;" in the proto.
-#include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include <gui/ISensorServer.h>
@@ -433,7 +430,7 @@ void SensorService::reloadConfig()
         return;
     }
 
-    //TODO(krr): lock this file.
+    //TODO(krr): lock the config file while reading via fnctl.
 
     google::protobuf::io::IstreamInputStream zerocopyInputStream(&inputStream);
 
@@ -443,16 +440,14 @@ void SensorService::reloadConfig()
         return;
     }
 
+    inputStream.close();
+
     const std::string& debug_info = firewallConfig.debug_info();
     ALOGD("Got the following config: %s", debug_info.c_str());
 
-
-    std::string debug_string;
-    google::protobuf::TextFormat::PrintToString(firewallConfig, &debug_string);
-    ALOGD("Here's the entire proto:\n ====START==== \n%s\n ====END==== \n",
-          debug_string.c_str());
-
-    inputStream.close();
+    // DebugString() is only supported with 'Message' not 'MessageLite'
+    // ALOGD("Here's the entire proto:\n ====START==== \n%s\n ====END==== \n",
+    //         firewallConfig.DebugString().c_str());
 
     return;
 }

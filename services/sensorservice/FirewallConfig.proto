@@ -1,6 +1,11 @@
 package android_sensorfirewall;
 
-// option optimize_for = LITE_RUNTIME;
+// !!! ----------------------------------------------------------------------
+// !!! Make sure to make identical change in
+// !!! frameworks/base/core/java/android/os/FirewallConfig.proto
+// !!! ----------------------------------------------------------------------
+
+option optimize_for = LITE_RUNTIME;
 
 message FirewallConfig {
   optional string debug_info = 1;
