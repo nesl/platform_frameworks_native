@@ -2,7 +2,7 @@ package android_sensorfirewall;
 
 // !!! ----------------------------------------------------------------------
 // !!! Make sure to make identical change in
-// !!! frameworks/base/core/java/android/os/FirewallConfig.proto
+// !!! frameworks/base/core/java/android/os/FirewallConfigMessages.proto
 // !!! ----------------------------------------------------------------------
 
 option optimize_for = LITE_RUNTIME;

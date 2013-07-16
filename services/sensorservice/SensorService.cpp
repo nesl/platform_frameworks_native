@@ -46,7 +46,7 @@
 
 #include "BatteryService.h"
 #include "CorrectedGyroSensor.h"
-#include "frameworks/native/services/sensorservice/FirewallConfig.pb.h"
+#include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
 #include "GravitySensor.h"
 #include "LinearAccelerationSensor.h"
 #include "OrientationSensor.h"
