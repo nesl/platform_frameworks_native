@@ -3,7 +3,6 @@
 
 #include <cutils/log.h>
 
-#include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include "frameworks/native/services/sensorservice/FirewallConfig.pb.h"
@@ -26,17 +25,18 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    ALOGD("Firewall config: %s", firewallConfig.DebugString().c_str());
+    // DebugString() is only supported with 'Message' not 'MessageLite'
+    // ALOGD("Firewall config: %s", firewallConfig.DebugString().c_str());
 
-    //google::protobuf::io::OstreamOutputStream zerocopyOutputStream(&outputStream);
-    //if (!firewallConfig.SerializeToZeroCopyStream(&zerocopyOutputStream)) {
-    if (!firewallConfig.SerializeToOstream(&outputStream)) {
+    google::protobuf::io::OstreamOutputStream zerocopyOutputStream(&outputStream);
+    if (!firewallConfig.SerializeToZeroCopyStream(&zerocopyOutputStream)) {
         ALOGE("Failed to serialize to file.");
         return -1;
     }
 
-    ALOGD("Flusing.");
+    ALOGD("Flush and close %s", kFirewallConfigFileName);
     outputStream << std::flush;
+    outputStream.close();
 
     return 0;
 }
