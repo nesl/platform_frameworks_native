@@ -2,11 +2,48 @@ package android_sensorfirewall;
 
 // !!! ----------------------------------------------------------------------
 // !!! Make sure to make identical change in
-// !!! frameworks/base/core/java/android/os/FirewallConfigMessages.proto
+// !!! frameworks/base/services/java/com/android/server/FirewallConfigMessages.proto
 // !!! ----------------------------------------------------------------------
 
 option optimize_for = LITE_RUNTIME;
 
-message FirewallConfig {
-  optional string debug_info = 1;
+message Perturb {
+    required float mean = 1;
+    required float variance = 2;
+    enum DistributionType {
+        GAUSSION = 1;
+        UNIFORM = 2;
+        EXPONENTIAL = 3;
+    }   
+    required DitributionType distType = 3;
 }
+
+message Param {
+    optional float constantValue = 1;
+    optional float delay = 2;
+    optional Perturb perturb = 3;
+}
+
+message Action {
+    enum ActionType {
+        ACTION_SUPPRESS = 1;
+        ACTION_CONSTANT = 2;
+        ACTION_DELAY = 3;
+        ACTION_PASSTHROUGH = 4;
+    }   
+    required ActionType actionType = 1;
+    optional Param param = 2;
+}
+
+message Rule {
+    required string ruleName = 1;
+    required int32 sensorType = 2;
+    required string pkgName = 3;
+    required uint32 pkgUid = 4;
+    required Action action = 5;
+}
+
+message FirewallConfig {
+    repeated Rule rule = 1;
+}
+
