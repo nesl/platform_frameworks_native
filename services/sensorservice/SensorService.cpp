@@ -442,9 +442,10 @@ void SensorService::reloadConfig()
     }
 
     inputStream.close();
-
-    const std::string& debug_info = firewallConfig.debug_info();
-    ALOGD("Got the following config: %s", debug_info.c_str());
+    
+    // Add parsing  here.
+    //const std::string& debug_info = firewallConfig.debug_info();
+    //ALOGD("Got the following config: %s", debug_info.c_str());
 
     // DebugString() is only supported with 'Message' not 'MessageLite'
     // ALOGD("Here's the entire proto:\n ====START==== \n%s\n ====END==== \n",

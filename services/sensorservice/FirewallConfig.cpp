@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     ALOGD("=-=-=-=-= FIREWALL CONFIG =-=-=-=-=");
 
     FirewallConfig firewallConfig;
-    firewallConfig.set_debug_info("EUREKA! AND FOO BAR TO YOU.");
+    //firewallConfig.set_debug_info("EUREKA! AND FOO BAR TO YOU.");
 
     std::fstream outputStream(kFirewallConfigFileName,
             std::ios::out | std::ios::binary);
