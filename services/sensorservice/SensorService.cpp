@@ -450,7 +450,18 @@ void SensorService::reloadConfig()
     // DebugString() is only supported with 'Message' not 'MessageLite'
     // ALOGD("Here's the entire proto:\n ====START==== \n%s\n ====END==== \n",
     //         firewallConfig.DebugString().c_str());
+   
+    ALOGD("Printing entire FirewallConfig :\n");
+    int i;
+    android_sensorfirewall::Rule& rule;
+    android_sensorfirewall::Action& action;
 
+    for(i = 0; i< firewallConfig.rule_size(); i++) {
+        rule = firewallConfig.rule(i);
+        ALOGD("rule_name = %s: sensorType = %d: pkgName = %s: pkgUid = %d:", rule.rulename().c_str(), rule.sensortype(), rule.pkgname().c_str(), rule.pkguid());
+        action = rule.action();
+        ALOGD("actionType = %d", action.actiontype());
+    }
     return;
 }
 

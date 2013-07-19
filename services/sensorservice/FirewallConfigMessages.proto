@@ -15,7 +15,7 @@ message Perturb {
         UNIFORM = 2;
         EXPONENTIAL = 3;
     }   
-    required DitributionType distType = 3;
+    required DistributionType distType = 3;
 }
 
 message Param {
