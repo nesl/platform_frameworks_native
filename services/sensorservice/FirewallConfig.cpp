@@ -36,6 +36,13 @@ int main(int argc, char** argv) {
     action = rule->mutable_action();
     action->set_actiontype(Action::ACTION_CONSTANT);
 
+    ALOGD("====== Writing these rules to /etc/firewall-config====");
+    int i;
+    for( i = 0; i < firewallConfig.rule_size(); i++) {
+        const Rule& pRule = firewallConfig.rule(i);
+        ALOGD("RuleName = %s, sensorType = %d, pkgName = %s, pkguid = %d\n", pRule.rulename().c_str(), pRule.sensortype(), pRule.pkgname().c_str(), pRule.pkguid());
+    }
+
     //firewallConfig.set_debug_info("EUREKA! AND FOO BAR TO YOU.");
 
     std::fstream outputStream(kFirewallConfigFileName,
