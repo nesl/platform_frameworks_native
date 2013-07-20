@@ -36,8 +36,6 @@
 #include <binder/IServiceManager.h>
 #include <binder/PermissionCache.h>
 
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-
 #include <gui/ISensorServer.h>
 #include <gui/ISensorEventConnection.h>
 #include <gui/SensorEventQueue.h>
@@ -47,12 +45,15 @@
 #include "BatteryService.h"
 #include "CorrectedGyroSensor.h"
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
+#include "FirewallConfigUtils-inl.h"
 #include "GravitySensor.h"
 #include "LinearAccelerationSensor.h"
 #include "OrientationSensor.h"
 #include "RotationVectorSensor.h"
 #include "SensorFusion.h"
 #include "SensorService.h"
+
+using namespace android_sensorfirewall;
 
 namespace android {
 // ---------------------------------------------------------------------------
@@ -419,48 +420,16 @@ sp<ISensorEventConnection> SensorService::createSensorEventConnection()
 void SensorService::reloadConfig()
 {
     //TODO(krr): Only the root (uid=0) should be able to invoke this.
-    ALOGD("SensorService::reloadConfig.");
+    ALOGD("========   SensorService::reloadConfig   ========");
 
-    const char* kFirewallConfigFileName = "/etc/firewall-config";
-
-    std::fstream inputStream(kFirewallConfigFileName,
-            std::ios::in | std::ios::binary);
-
-    if (!inputStream.is_open()) {
-        ALOGE("Failed to open file.");
-        return;
+    FirewallConfig firewallConfig;
+    if (!ReadFirewallConfig(&firewallConfig)) {
+      ALOGE("Failed to load firewall config.");
+      return;
     }
 
-    //TODO(krr): lock the config file while reading via fnctl.
-
-    google::protobuf::io::IstreamInputStream zerocopyInputStream(&inputStream);
-
-    android_sensorfirewall::FirewallConfig firewallConfig;
-    if (!firewallConfig.ParseFromZeroCopyStream(&zerocopyInputStream)) {
-        ALOGE("Failed to parse file.");
-        return;
-    }
-
-    inputStream.close();
-    
-    // Add parsing  here.
-    //const std::string& debug_info = firewallConfig.debug_info();
-    //ALOGD("Got the following config: %s", debug_info.c_str());
-
-    // DebugString() is only supported with 'Message' not 'MessageLite'
-    // ALOGD("Here's the entire proto:\n ====START==== \n%s\n ====END==== \n",
-    //         firewallConfig.DebugString().c_str());
-   
-    ALOGD("Printing entire FirewallConfig :\n");
-    int i;
-
-    for(i = 0; i< firewallConfig.rule_size(); i++) {
-        const android_sensorfirewall::Rule& rule = firewallConfig.rule(i);
-        ALOGD("rule_name = %s: sensorType = %d: pkgName = %s: pkgUid = %d:", rule.rulename().c_str(), rule.sensortype(), rule.pkgname().c_str(), rule.pkguid());
-        const android_sensorfirewall::Action& action = rule.action();
-        ALOGD("actionType = %d", action.actiontype());
-    }
-    return;
+    PrintFirewallConfig(firewallConfig);
+    ALOGD("========   reloadConfig DONE   ========");
 }
 
 void SensorService::cleanupConnection(SensorEventConnection* c)
