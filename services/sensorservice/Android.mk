@@ -29,7 +29,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libstlport \
 
 LOCAL_STATIC_LIBRARIES := \
-	libprotobuf-cpp-2.3.0-full \
+	libprotobuf-cpp-2.3.0-lite \
 
 LOCAL_MODULE := libsensorservice
 
@@ -49,14 +49,14 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_CFLAGS:= -DLOG_TAG=\"SensorFirewall-Config\"
 
-LOCAL_MODULE:= sensorfirewall-cofig
+LOCAL_MODULE:= sensorfirewall-config
 
 LOCAL_SHARED_LIBRARIES := \
 	libcutils \
 	libstlport \
 
 LOCAL_STATIC_LIBRARIES := \
-	libprotobuf-cpp-2.3.0-full
+	libprotobuf-cpp-2.3.0-lite
 
 LOCAL_C_INCLUDES := \
 	bionic \
