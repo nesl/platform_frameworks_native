@@ -29,7 +29,8 @@ message Action {
         ACTION_SUPPRESS = 1;
         ACTION_CONSTANT = 2;
         ACTION_DELAY = 3;
-        ACTION_PASSTHROUGH = 4;
+        ACTION_PERTURB = 4;
+        ACTION_PASSTHROUGH = 5;
     }   
     required ActionType actionType = 1;
     optional Param param = 2;
