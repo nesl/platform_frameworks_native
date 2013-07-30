@@ -52,6 +52,7 @@
 #include "RotationVectorSensor.h"
 #include "SensorFusion.h"
 #include "SensorService.h"
+#include "PrivacyRules.h"
 
 using namespace android_sensorfirewall;
 
@@ -168,13 +169,14 @@ void SensorService::onFirstRef()
     // Delete this later 
     PrivacyRules mPrivacyRules;
 
-    key_t key1 = mPrivacyRules.generateKey(1000, 1, "system");
+    key_t* key1 = mPrivacyRules.generateKey(1000, 1, "system");
+    key_t* key2 = mPrivacyRules.generateKey(2000, 2, "testApp");
+/*
     privacy_vec_t param1;
     param1.action = ACTION_SUPPRESS;
     param1.constantValue = 20;
     mPrivacyRules.addRule(key1, param1);
 
-    key_t key2 = mPrivacyRules.generateKey(2000, 2, "testApp");
     privacy_vec_t param2;
     param2.action = ACTION_CONSTANT;
     param2.constantValue = 1;
@@ -185,6 +187,7 @@ void SensorService::onFirstRef()
 
     const privacy_vec_t* temp2 = mPrivacyRules.findRule(key2);
     ALOGD("Action = %d, constantVal = %f", temp2->action, temp2->constantValue);
+*/
 
 }
 
@@ -669,12 +672,14 @@ status_t SensorService::SensorEventConnection::sendEvents(
         count = numEvents;
     }
 
+/*
     privacy_vec_t param;
     param.action = ACTION_CONSTANT;
     param.constantValue = 1;
     ALOGD("-----Calling transformData with ---");
     scratch = mSensorPerturb.transformData(SENSOR_TYPE_ACCELEROMETER, scratch, count, &param);
 
+    //Printing the contents of the scratch buffer
     size_t j=0;
     ALOGD("-----Printing Scratch with NumEvent = %d ---",count);
 
@@ -682,7 +687,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
         ALOGD("SType = %d: data-x = %f, data-y = %f, data-z = %f", scratch[j].type, scratch[j].data[0], scratch[j].data[1], scratch[j].data[2]);
         j++;
     }
-
+*/
     //ASensorEvent* temp  = reinterpret_cast<ASensorEvent*>(scratch);
     ssize_t size = 0;
     if(scratch) {

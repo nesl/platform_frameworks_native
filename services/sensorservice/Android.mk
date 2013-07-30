@@ -10,12 +10,12 @@ LOCAL_SRC_FILES:= \
 	GravitySensor.cpp \
 	LinearAccelerationSensor.cpp \
 	OrientationSensor.cpp \
-	PrivacyRules.cpp \
 	RotationVectorSensor.cpp \
 	SensorDevice.cpp \
 	SensorFusion.cpp \
 	SensorInterface.cpp \
 	SensorPerturb.cpp \
+	PrivacyRules.cpp \
 	SensorService.cpp \
 
 LOCAL_CFLAGS:= -DLOG_TAG=\"SensorService\"
