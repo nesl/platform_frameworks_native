@@ -13,7 +13,7 @@ using android_sensorfirewall::FirewallConfig;
 using android_sensorfirewall::Rule;
 using android_sensorfirewall::Action;
 
-const char* kFirewallConfigFilename = "/etc/firewall-config";
+const char* kFirewallConfigFilename = "/data/firewall-config";
 
 namespace android_sensorfirewall {
 // ---------------------------------------------------------------------------

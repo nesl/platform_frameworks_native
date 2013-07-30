@@ -1,4 +1,3 @@
-
 #include <string>
 #include <cutils/log.h>
 
