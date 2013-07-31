@@ -98,7 +98,7 @@ void PrintFirewallConfig(const FirewallConfig& firewallConfig) {
 void FirewallConfigToMap(const FirewallConfig& firewallConfig, std::hash_map<int, const Rule*>* map) {
   for (int ii = 0; ii < firewallConfig.rule_size(); ++ii) {
       const Rule& rule = firewallConfig.rule(ii);
-      std::pair<int, Rule*> pair = std::make_pair(((int)rule.pkguid()) * 10000 + rule.sensortype(), &rule);
+      std::pair<int, const Rule*> pair = std::make_pair(((int)rule.pkguid()) * 10000 + rule.sensortype(), &rule);
       map->insert(pair);
   }
 }
