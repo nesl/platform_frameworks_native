@@ -2,7 +2,11 @@
 #define ANDROID_FIREWALL_CONFIG_UTILS_INL_H
 
 #include <fstream>
+
 #include <string>
+#include <hash_map>
+
+#include <utility>
 #include <cutils/log.h>
 
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
@@ -85,13 +89,21 @@ bool WriteFirewallConfig(const FirewallConfig& firewallConfig) {
 
 
 void PrintFirewallConfig(const FirewallConfig& firewallConfig) {
-    for (int ii = 0; ii < firewallConfig.rule_size(); ii++) {
+    for (int ii = 0; ii < firewallConfig.rule_size(); ++ii) {
         const Rule& rule = firewallConfig.rule(ii);
         ALOGD("rule_name = %s: sensorType = %d: pkgName = %s: pkgUid = %d:",
             rule.rulename().c_str(), rule.sensortype(), rule.pkgname().c_str(),
             rule.pkguid());
         ALOGD("actionType = %d", rule.action().actiontype());
     }
+}
+
+void FirewallConfigToMap(const FirewallConfig& firewallConfig, std::hash_map<int, const Rule*>* map) {
+  for (int ii = 0; ii < firewallConfig.rule_size(); ++ii) {
+      const Rule& rule = firewallConfig.rule(ii);
+      std::pair<int, const Rule*> pair = std::make_pair(((int)rule.pkguid()) * 10000 + rule.sensortype(), &rule);
+      map->insert(pair);
+  }
 }
 
 void ParseFirewallConfigToHashTable(const FirewallConfig* firewallConfig, android::PrivacyRules* mPrivacyRules) {
