@@ -167,11 +167,11 @@ void SensorService::onFirstRef()
         }
     }
     // Delete this later 
+/*
     PrivacyRules mPrivacyRules;
 
     key_t* key1 = mPrivacyRules.generateKey(1000, 1, "system");
     key_t* key2 = mPrivacyRules.generateKey(2000, 2, "testApp");
-/*
     privacy_vec_t param1;
     param1.action = ACTION_SUPPRESS;
     param1.constantValue = 20;
@@ -420,6 +420,8 @@ sp<ISensorEventConnection> SensorService::createSensorEventConnection()
     return result;
 }
 
+PrivacyRules mPrivacyRules;
+
 void SensorService::reloadConfig()
 {
     //TODO(krr): Only the root (uid=0) should be able to invoke this.
@@ -433,6 +435,8 @@ void SensorService::reloadConfig()
 
     PrintFirewallConfig(firewallConfig);
     ALOGD("========   reloadConfig DONE   ========");
+
+    ParseFirewallConfigToHashTable(&firewallConfig, &mPrivacyRules);
 }
 
 void SensorService::cleanupConnection(SensorEventConnection* c)

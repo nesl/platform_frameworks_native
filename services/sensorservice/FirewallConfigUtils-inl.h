@@ -6,6 +6,7 @@
 #include <cutils/log.h>
 
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
+#include "PrivacyRules.h"
 
 // ---------------------------------------------------------------------------
 
@@ -84,12 +85,23 @@ bool WriteFirewallConfig(const FirewallConfig& firewallConfig) {
 
 
 void PrintFirewallConfig(const FirewallConfig& firewallConfig) {
-    for (int ii = 0; ii < firewallConfig.rule_size(); ++ii) {
+    for (int ii = 0; ii < firewallConfig.rule_size(); ii++) {
         const Rule& rule = firewallConfig.rule(ii);
         ALOGD("rule_name = %s: sensorType = %d: pkgName = %s: pkgUid = %d:",
             rule.rulename().c_str(), rule.sensortype(), rule.pkgname().c_str(),
             rule.pkguid());
         ALOGD("actionType = %d", rule.action().actiontype());
+    }
+}
+
+void ParseFirewallConfigToHashTable(const FirewallConfig* firewallConfig, android::PrivacyRules* mPrivacyRules) {
+    if(mPrivacyRules->getConfigLength() != 0) {
+        mPrivacyRules->clear();
+    }
+    for (int i = 0; i < firewallConfig->rule_size(); i++) {
+        const Rule& rule = firewallConfig->rule(i);
+        const android::key_t* key = mPrivacyRules->generateKey(rule.pkguid(), rule.sensortype(), rule.pkgname().c_str());
+        mPrivacyRules->addRule(key, &rule);
     }
 }
 
