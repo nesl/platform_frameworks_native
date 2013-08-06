@@ -420,7 +420,7 @@ sp<ISensorEventConnection> SensorService::createSensorEventConnection()
     return result;
 }
 
-PrivacyRules mPrivacyRules;
+PrivacyRules* mPrivacyRules = new PrivacyRules();
 
 void SensorService::reloadConfig()
 {
@@ -436,7 +436,19 @@ void SensorService::reloadConfig()
     PrintFirewallConfig(firewallConfig);
     ALOGD("========   reloadConfig DONE   ========");
 
-    ParseFirewallConfigToHashTable(&firewallConfig, &mPrivacyRules);
+    ParseFirewallConfigToHashTable(&firewallConfig, mPrivacyRules);
+    
+    //Testing HashTable
+    /*
+    ALOGD("======== Testing  ========");
+    if(mPrivacyRules->findRule(mPrivacyRules->generateKey(100025, 1, "com.facebook")))
+        mPrivacyRules->printTblEntry(mPrivacyRules->findRule(mPrivacyRules->generateKey(100025, 1, "com.facebook")));
+        //mPrivacyRules.printTblEntry(mPrivacyRules.findRule(mPrivacyRules.generateKey(100025, 1, "com.facebook")));
+    if(mPrivacyRules->findRule(mPrivacyRules->generateKey(100035, 2, "com.twitter")))
+        mPrivacyRules->printTblEntry(mPrivacyRules->findRule(mPrivacyRules->generateKey(100035, 2, "com.twitter")));
+    
+    //mPrivacyRules.printTblEntry(mPrivacyRules.findRule(mPrivacyRules.generateKey(10045, 3, "com.google")));
+    */
 }
 
 void SensorService::cleanupConnection(SensorEventConnection* c)

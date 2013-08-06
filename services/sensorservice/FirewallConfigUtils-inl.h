@@ -107,14 +107,19 @@ void FirewallConfigToMap(const FirewallConfig& firewallConfig, std::hash_map<int
 }
 
 void ParseFirewallConfigToHashTable(const FirewallConfig* firewallConfig, android::PrivacyRules* mPrivacyRules) {
-    if(mPrivacyRules->getConfigLength() != 0) {
-        mPrivacyRules->clear();
-    }
+    ALOGD("============= Clearing the hashtable =============");
+    mPrivacyRules->clear();
+    ALOGD("============= Hashtable cleared =============");
+
     for (int i = 0; i < firewallConfig->rule_size(); i++) {
         const Rule& rule = firewallConfig->rule(i);
-        const android::key_t* key = mPrivacyRules->generateKey(rule.pkguid(), rule.sensortype(), rule.pkgname().c_str());
-        mPrivacyRules->addRule(key, &rule);
+        ALOGD("ParseRule:pkguid=%d: sensortype = %d : pkgname = %s :\n",rule.pkguid(), rule.sensortype(), rule.pkgname().c_str());
+        const android::ruleKey_t* key = mPrivacyRules->generateKey(rule.pkguid(), rule.sensortype(), rule.pkgname().c_str());
+        Rule* temp = new Rule();
+        temp->CopyFrom(rule);
+        mPrivacyRules->addRule(key, temp);
     }
+    ALOGD("============= All Rules Added =============");
 }
 
 // ---------------------------------------------------------------------------
