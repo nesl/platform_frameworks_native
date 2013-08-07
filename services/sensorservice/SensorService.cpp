@@ -16,6 +16,7 @@
 
 #include <fcntl.h>
 #include <fstream>
+#include <sstream>
 #include <math.h>
 #include <stdint.h>
 #include <string>
@@ -622,7 +623,7 @@ bool SensorService::SensorRecord::removeConnection(
 
 SensorService::SensorEventConnection::SensorEventConnection(
         const sp<SensorService>& service, uid_t uid)
-    : mService(service), mChannel(new BitTube()), mUid(uid)
+    : mService(service), mChannel(new BitTube()), mUid(uid), mPkgName(SensorService::SensorEventConnection::readPkgName())
 {
 }
 
@@ -643,6 +644,33 @@ bool SensorService::SensorEventConnection::addSensor(int32_t handle) {
         return true;
     }
     return false;
+}
+
+const char* SensorService::SensorEventConnection::readPkgName() {
+    char* pkgName;
+    char* fileName;
+    // TODO: read the file size instead of a constant value
+    const int length = 50; 
+
+    std::ostringstream s;
+    s << IPCThreadState::self()->getCallingPid();
+    fileName = new char[strlen("/proc/") + strlen(s.str().c_str()) + strlen("/cmdline") + 1];
+    strcpy(fileName, "/proc/");
+    strcat(fileName, s.str().c_str());
+    strcat(fileName, "/cmdline");
+
+    std::ifstream file (fileName, std::ios::in);
+    pkgName = new char[length];
+    if (file.is_open()) {
+        file.getline(pkgName, length);
+        ALOGD("pkgNameLength = %d, pkgName is %s\n", strlen(pkgName), pkgName);
+        file.close();
+    }
+    else {
+        ALOGD("Unable to open %s file for reading pkgName", fileName);;
+        pkgName = NULL;
+    }
+    return pkgName;
 }
 
 bool SensorService::SensorEventConnection::removeSensor(int32_t handle) {

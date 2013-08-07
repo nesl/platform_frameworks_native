@@ -98,6 +98,7 @@ void PrintFirewallConfig(const FirewallConfig& firewallConfig) {
     }
 }
 
+/*
 void FirewallConfigToMap(const FirewallConfig& firewallConfig, std::hash_map<int, const Rule*>* map) {
   for (int ii = 0; ii < firewallConfig.rule_size(); ++ii) {
       const Rule& rule = firewallConfig.rule(ii);
@@ -105,6 +106,7 @@ void FirewallConfigToMap(const FirewallConfig& firewallConfig, std::hash_map<int
       map->insert(pair);
   }
 }
+*/
 
 void ParseFirewallConfigToHashTable(const FirewallConfig* firewallConfig, android::PrivacyRules* mPrivacyRules) {
     ALOGD("============= Clearing the hashtable =============");

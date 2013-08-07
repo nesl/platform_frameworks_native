@@ -16,8 +16,8 @@ namespace android {
         return configLength;
     }
 
-    const ruleKey_t* PrivacyRules::generateKey(int uid, int type, const char* appName) {
-        const ruleKey_t* temp = new ruleKey_t(uid, type, appName);
+    const ruleKey_t* PrivacyRules::generateKey(int uid, int type, const char* pkgName) {
+        const ruleKey_t* temp = new ruleKey_t(uid, type, pkgName);
         return temp;
     }
     

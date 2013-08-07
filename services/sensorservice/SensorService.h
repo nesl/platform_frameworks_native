@@ -82,6 +82,7 @@ class SensorService :
         sp<SensorService> const mService;
         sp<BitTube> const mChannel;
         uid_t mUid;
+        const char* mPkgName;
         SensorPerturb mSensorPerturb;
         mutable Mutex mConnectionLock;
 
@@ -97,8 +98,10 @@ class SensorService :
         bool hasAnySensor() const;
         bool addSensor(int32_t handle);
         bool removeSensor(int32_t handle);
-
         uid_t getUid() const { return mUid; }
+
+        const char* readPkgName();
+        const char* getPkgName() const { return mPkgName; }
     };
 
     class SensorRecord {
