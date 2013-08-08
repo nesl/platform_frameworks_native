@@ -6,7 +6,6 @@
 #include <string>
 #include <hash_map>
 #include <utility>
-#include <utils/BasicHashtable.h>
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
 
 

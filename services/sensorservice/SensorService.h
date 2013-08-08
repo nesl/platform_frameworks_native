@@ -35,7 +35,7 @@
 
 #include "SensorInterface.h"
 
-#include "SensorPerturb.h"
+//#include "SensorPerturb.h"
 //#include "PrivacyRules.h"
 
 // ---------------------------------------------------------------------------
@@ -83,7 +83,6 @@ class SensorService :
         sp<BitTube> const mChannel;
         uid_t mUid;
         const char* mPkgName;
-        SensorPerturb mSensorPerturb;
         mutable Mutex mConnectionLock;
 
         // protected by SensorService::mLock

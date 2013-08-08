@@ -3,46 +3,24 @@
 
 #include <stdint.h>
 #include <sys/types.h>
+#include "PrivacyRules.h"
+#include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
 
 // ---------------------------------------------------------------------------
-
+// ---------------------------------------------------------------------------
+using namespace android_sensorfirewall;
 namespace android {
 // ---------------------------------------------------------------------------
 
-const uint8_t ACTION_SUPPRESS = 1;
-const uint8_t ACTION_CONSTANT = 2;
-const uint8_t ACTION_PERTURB = 3;
-const uint8_t ACTION_DELAY = 4;
-const uint8_t ACTION_PASSTHROUGH = 5;
-
-typedef enum {GAUSSIAN = 1, UNIFORM = 2, EXPONENTIAL = 3} distribution_t;
-
-typedef struct {
-    union {
-        struct {
-            float constantValue;
-        };
-        struct {
-            float mean;
-            float variance;
-            float high;
-            float low;
-            distribution_t name;
-        };
-        struct {
-            float delay;
-        };
-    };
-    int8_t action;
-} privacy_vec_t;
-
 class SensorPerturb {
 private:
-    sensors_event_t* constantData(int32_t type, sensors_event_t* buffer, size_t count, privacy_vec_t* param);
-    sensors_event_t* suppressData(int32_t type, privacy_vec_t* param);
+    void constantData(sensors_event_t* scratch, size_t start_pos,
+            size_t end_pos, const int32_t sensorType, const Param* param);
+    void suppressData(sensors_event_t* scratch, size_t start_pos,
+            size_t end_pos, size_t count);
 public:
-    SensorPerturb();
-    sensors_event_t* transformData(int32_t type, sensors_event_t* buffer, size_t count, privacy_vec_t* param);
+    size_t transformData(uid_t uid, const char* pkgName, sensors_event_t* scratch,
+            size_t count, PrivacyRules* mPrivacyRules);
 };
 
 }; // namespace android

@@ -54,6 +54,7 @@
 #include "SensorFusion.h"
 #include "SensorService.h"
 #include "PrivacyRules.h"
+#include "SensorPerturb.h"
 
 using namespace android_sensorfirewall;
 
@@ -167,28 +168,6 @@ void SensorService::onFirstRef()
             mInitCheck = NO_ERROR;
         }
     }
-    // Delete this later 
-/*
-    PrivacyRules mPrivacyRules;
-
-    key_t* key1 = mPrivacyRules.generateKey(1000, 1, "system");
-    key_t* key2 = mPrivacyRules.generateKey(2000, 2, "testApp");
-    privacy_vec_t param1;
-    param1.action = ACTION_SUPPRESS;
-    param1.constantValue = 20;
-    mPrivacyRules.addRule(key1, param1);
-
-    privacy_vec_t param2;
-    param2.action = ACTION_CONSTANT;
-    param2.constantValue = 1;
-    mPrivacyRules.addRule(key2, param2);
-
-    const privacy_vec_t* temp1 = mPrivacyRules.findRule(key1);
-    ALOGD("Action = %d", temp1->action);
-
-    const privacy_vec_t* temp2 = mPrivacyRules.findRule(key2);
-    ALOGD("Action = %d, constantVal = %f", temp2->action, temp2->constantValue);
-*/
 
 }
 
@@ -691,6 +670,8 @@ bool SensorService::SensorEventConnection::hasAnySensor() const {
     return mSensorInfo.size() ? true : false;
 }
 
+SensorPerturb mSensorPerturb;
+
 status_t SensorService::SensorEventConnection::sendEvents(
         sensors_event_t const* buffer, size_t numEvents,
         sensors_event_t* scratch)
@@ -703,6 +684,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
         size_t i=0;
         while (i<numEvents) {
             const int32_t curr = buffer[i].sensor;
+            ALOGD("SensorService::sensortype = %d\n",curr);
             if (mSensorInfo.indexOf(curr) >= 0) {
                 do {
                     scratch[count++] = buffer[i++];
@@ -715,39 +697,19 @@ status_t SensorService::SensorEventConnection::sendEvents(
         scratch = const_cast<sensors_event_t *>(buffer);
         count = numEvents;
     }
-
-/*
-    privacy_vec_t param;
-    param.action = ACTION_CONSTANT;
-    param.constantValue = 1;
-    ALOGD("-----Calling transformData with ---");
-    scratch = mSensorPerturb.transformData(SENSOR_TYPE_ACCELEROMETER, scratch, count, &param);
-
-    //Printing the contents of the scratch buffer
-    size_t j=0;
-    ALOGD("-----Printing Scratch with NumEvent = %d ---",count);
-
-    while(j < count) {
-        ALOGD("SType = %d: data-x = %f, data-y = %f, data-z = %f", scratch[j].type, scratch[j].data[0], scratch[j].data[1], scratch[j].data[2]);
-        j++;
+    if(getUid() >= 10000) { 
+        count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
     }
-*/
-    //ASensorEvent* temp  = reinterpret_cast<ASensorEvent*>(scratch);
-    ssize_t size = 0;
-    if(scratch) {
-        // NOTE: ASensorEvent and sensors_event_t are the same type
-        size = SensorEventQueue::write(mChannel,
-                reinterpret_cast<ASensorEvent const*>(scratch), count);
-        if (size == -EAGAIN) {
-            // the destination doesn't accept events anymore, it's probably
-            // full. For now, we just drop the events on the floor.
-            //ALOGW("dropping %d events on the floor", count);
-            return size;
-        }
-    } else {
+
+    // NOTE: ASensorEvent and sensors_event_t are the same type
+    ssize_t size = SensorEventQueue::write(mChannel,
+            reinterpret_cast<ASensorEvent const*>(scratch), count);
+    if (size == -EAGAIN) {
+        // the destination doesn't accept events anymore, it's probably
+        // full. For now, we just drop the events on the floor.
+        //ALOGW("dropping %d events on the floor", count);
         return size;
     }
-
     return size < 0 ? status_t(size) : status_t(NO_ERROR);
 }
 
