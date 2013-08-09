@@ -73,9 +73,9 @@ size_t SensorPerturb::transformData(
     ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
 
     while (i < count) {
-        const int32_t sensorType = scratch[i].sensor;
+        const int32_t sensorType = scratch[i].type;
         start_pos = i;
-        while((i < count) && (scratch[i].sensor == sensorType)) {
+        while((i < count) && (scratch[i].type == sensorType)) {
                 i++;
         }
         end_pos = i-1;
