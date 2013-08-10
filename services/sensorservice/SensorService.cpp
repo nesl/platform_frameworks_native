@@ -642,7 +642,6 @@ const char* SensorService::SensorEventConnection::readPkgName() {
     pkgName = new char[length];
     if (file.is_open()) {
         file.getline(pkgName, length);
-        ALOGD("pkgNameLength = %d, pkgName is %s\n", strlen(pkgName), pkgName);
         file.close();
     }
     else {
@@ -684,7 +683,6 @@ status_t SensorService::SensorEventConnection::sendEvents(
         size_t i=0;
         while (i<numEvents) {
             const int32_t curr = buffer[i].sensor;
-            ALOGD("SensorService::sensortype = %d\n",curr);
             if (mSensorInfo.indexOf(curr) >= 0) {
                 do {
                     scratch[count++] = buffer[i++];
@@ -697,9 +695,10 @@ status_t SensorService::SensorEventConnection::sendEvents(
         scratch = const_cast<sensors_event_t *>(buffer);
         count = numEvents;
     }
-    if(getUid() >= 10000) { 
+    // Check to exclude system service. Will do it in ruleApp.
+    //if(getUid() >= 10000) { 
         count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
-    }
+    //}
 
     // NOTE: ASensorEvent and sensors_event_t are the same type
     ssize_t size = SensorEventQueue::write(mChannel,

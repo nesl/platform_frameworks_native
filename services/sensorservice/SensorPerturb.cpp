@@ -79,13 +79,11 @@ size_t SensorPerturb::transformData(
                 i++;
         }
         end_pos = i-1;
-        ALOGD("transformData: sensortype = %d\n", sensorType);
         const ruleKey_t* mKey = mPrivacyRules->generateKey(uid, sensorType, pkgName);
         const Rule* rule = mPrivacyRules->findRule(mKey);
         if(rule) {
             const Action* action = &rule->action();
             const Param* param = &action->param();
-            ALOGD("transformData::actionType = %d\n", action->actiontype());
             switch(action->actiontype()) {
                 case Action::ACTION_SUPPRESS: 
                     SensorPerturb::suppressData(scratch, start_pos, end_pos, count);
