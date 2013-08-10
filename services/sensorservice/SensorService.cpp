@@ -77,6 +77,8 @@ SensorService::SensorService()
 {
 }
 
+SensorPerturb mSensorPerturb;
+
 void SensorService::onFirstRef()
 {
     ALOGD("nuSensorService starting...");
@@ -170,6 +172,9 @@ void SensorService::onFirstRef()
             mInitCheck = NO_ERROR;
         }
     }
+
+    // init counter in SensorPerturb
+    mSensorPerturb.initCounter();
 
 }
 
@@ -675,9 +680,6 @@ bool SensorService::SensorEventConnection::hasAnySensor() const {
     Mutex::Autolock _l(mConnectionLock);
     return mSensorInfo.size() ? true : false;
 }
-
-SensorPerturb mSensorPerturb;
-SensorCount *sensorCoung = new SensorCount();
 
 status_t SensorService::SensorEventConnection::sendEvents(
         sensors_event_t const* buffer, size_t numEvents,

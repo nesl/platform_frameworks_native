@@ -112,6 +112,8 @@ size_t SensorPerturb::transformData(
             }
         }
 
+        /** Add code here to periodically write AppEntry to file **/
+
         // Transfrom data
         ALOGD("transformData: sensortype = %d\n", sensorType);
         const ruleKey_t* mKey = mPrivacyRules->generateKey(uid, sensorType, pkgName);
