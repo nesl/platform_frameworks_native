@@ -14,6 +14,7 @@ LOCAL_SRC_FILES:= \
 	SensorDevice.cpp \
 	SensorFusion.cpp \
 	SensorInterface.cpp \
+	SensorCountMessages.proto \
 	SensorPerturb.cpp \
 	PrivacyRules.cpp \
 	SensorService.cpp \
