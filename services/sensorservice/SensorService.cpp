@@ -55,6 +55,8 @@
 #include "SensorService.h"
 #include "PrivacyRules.h"
 #include "SensorPerturb.h"
+#include "SensorCount.h"
+ #include "frameworks/native/services/sensorservice/SensorCountMessages.pb.h"
 
 using namespace android_sensorfirewall;
 
@@ -628,9 +630,7 @@ bool SensorService::SensorEventConnection::addSensor(int32_t handle) {
 const char* SensorService::SensorEventConnection::readPkgName() {
     char* pkgName;
     char* fileName;
-    // TODO: read the file size instead of a constant value
-    const int length = 50; 
-
+    int size = 0;
     std::ostringstream s;
     s << IPCThreadState::self()->getCallingPid();
     fileName = new char[strlen("/proc/") + strlen(s.str().c_str()) + strlen("/cmdline") + 1];
@@ -638,11 +638,17 @@ const char* SensorService::SensorEventConnection::readPkgName() {
     strcat(fileName, s.str().c_str());
     strcat(fileName, "/cmdline");
 
-    std::ifstream file (fileName, std::ios::in);
-    pkgName = new char[length];
+    std::ifstream file (fileName, std::ios::in | std::ios::binary | std::ios::ate );
     if (file.is_open()) {
-        file.getline(pkgName, length);
-        ALOGD("pkgNameLength = %d, pkgName is %s\n", strlen(pkgName), pkgName);
+        char c;
+        while ((c = file.get()) != file.eof()) {
+            size++;
+        }
+        pkgName = new char[size + 1];
+        file.seekg(0, std::ios::beg);
+        file.read(pkgName, size);
+        pkgName[size] = '\0';
+        //ALOGD("pkgName read is %s\n", pkgName);
         file.close();
     }
     else {
@@ -671,6 +677,7 @@ bool SensorService::SensorEventConnection::hasAnySensor() const {
 }
 
 SensorPerturb mSensorPerturb;
+SensorCount *sensorCoung = new SensorCount();
 
 status_t SensorService::SensorEventConnection::sendEvents(
         sensors_event_t const* buffer, size_t numEvents,
@@ -684,7 +691,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
         size_t i=0;
         while (i<numEvents) {
             const int32_t curr = buffer[i].sensor;
-            ALOGD("SensorService::sensortype = %d\n",curr);
+            //ALOGD("SensorService::sensortype = %d\n",curr);
             if (mSensorInfo.indexOf(curr) >= 0) {
                 do {
                     scratch[count++] = buffer[i++];
@@ -697,9 +704,9 @@ status_t SensorService::SensorEventConnection::sendEvents(
         scratch = const_cast<sensors_event_t *>(buffer);
         count = numEvents;
     }
-    if(getUid() >= 10000) { 
-        count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
-    }
+    //if(getUid() >= 10000) { 
+    count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
+    //}
 
     // NOTE: ASensorEvent and sensors_event_t are the same type
     ssize_t size = SensorEventQueue::write(mChannel,

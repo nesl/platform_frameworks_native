@@ -7,10 +7,18 @@
 #include "SensorPerturb.h"
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
 #include "PrivacyRules.h"
+#include "frameworks/native/services/sensorservice/SensorCountMessages.pb.h"
 
 using namespace android_sensorfirewall;
 namespace android {
 // ---------------------------------------------------------------------------
+void SensorPerturb::initCounter() 
+{
+    // should also add code to read previously existing file
+    counter = new SensorCounter();
+
+}
+
 void SensorPerturb::constantData(
         sensors_event_t* scratch, size_t start_pos, size_t end_pos, 
         const int32_t sensorType, const Param* param)
@@ -69,8 +77,10 @@ size_t SensorPerturb::transformData(
 {
     size_t start_pos, end_pos;
     size_t i=0;
-
     ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
+
+    int ii = 0;
+    bool flag = false;
 
     while (i < count) {
         const int32_t sensorType = scratch[i].type;
@@ -79,6 +89,30 @@ size_t SensorPerturb::transformData(
                 i++;
         }
         end_pos = i-1;
+
+
+        // Update count in SensorCounter here
+        flag = false;
+        for (ii = 0; ii < counter->appEntry_size(); ii++) {
+            if ((counter->appEntry(ii).uid == uid) 
+                && (strcmp(counter->appEntry(ii).pkgName, pkgName) == 0)) {
+                counter->appEntry(ii).sensorEntry(sensorType) += (end_pos - start_pos + 1);
+                flag = true;
+            }                
+        }
+
+        if (!flag) {
+            AppEntry *aEntry = counter->add_appEntry();
+            SensorEntry *sEntry = NULL:
+            aEntry->set_uid(uid);
+            aEntry->set_pkgName(pkgName);
+            for (ii = 0; ii < NUM_SENSORTYPE; ii++) {
+                sEntry = aEntry->add_sensorEntry();
+                sEntry->set_count(0);
+            }
+        }
+
+        // Transfrom data
         ALOGD("transformData: sensortype = %d\n", sensorType);
         const ruleKey_t* mKey = mPrivacyRules->generateKey(uid, sensorType, pkgName);
         const Rule* rule = mPrivacyRules->findRule(mKey);

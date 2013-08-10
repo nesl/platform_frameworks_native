@@ -1,0 +1,23 @@
+package android_sensorfirewall;
+
+// !!! ----------------------------------------------------------------------
+// !!! Make sure to make identical change in
+// !!! frameworks/base/services/java/com/android/server/SensorCountMessages.proto
+// !!! ----------------------------------------------------------------------
+
+option optimize_for = LITE_RUNTIME;
+
+message SensorEntry {
+	required uint64 count = 1;
+}
+
+message AppEntry {
+	required int32 uid = 1;
+	required string pkgName = 2;
+	required uint64 lastUpdate = 3;
+	required repeated SensorEntry sensorEntry = 4;
+}
+
+message SensorCounter {
+	required repeated AppEntry appEntry = 1;
+}
