@@ -628,9 +628,7 @@ bool SensorService::SensorEventConnection::addSensor(int32_t handle) {
 const char* SensorService::SensorEventConnection::readPkgName() {
     char* pkgName;
     char* fileName;
-    // TODO: read the file size instead of a constant value
-    const int length = 50; 
-
+    int size = 0;
     std::ostringstream s;
     s << IPCThreadState::self()->getCallingPid();
     fileName = new char[strlen("/proc/") + strlen(s.str().c_str()) + strlen("/cmdline") + 1];
@@ -638,10 +636,17 @@ const char* SensorService::SensorEventConnection::readPkgName() {
     strcat(fileName, s.str().c_str());
     strcat(fileName, "/cmdline");
 
-    std::ifstream file (fileName, std::ios::in);
-    pkgName = new char[length];
+    std::ifstream file (fileName, std::ios::in | std::ios::binary | std::ios::ate );
     if (file.is_open()) {
-        file.getline(pkgName, length);
+        char c;
+        while ((c = file.get()) != file.eof()) {
+            size++;
+        }
+        pkgName = new char[size + 1];
+        file.seekg(0, std::ios::beg);
+        file.read(pkgName, size);
+        pkgName[size] = '\0';
+        //ALOGD("pkgName read is %s\n", pkgName);
         file.close();
     }
     else {
