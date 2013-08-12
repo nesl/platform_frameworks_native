@@ -8,20 +8,43 @@ package android_sensorfirewall;
 option optimize_for = LITE_RUNTIME;
 
 message Perturb {
-    required float mean = 1;
-    required float variance = 2;
+    optional float mean = 1;
+    optional float variance = 2;
+    optional float unifMin = 3;
+    optional float unifMax = 4;
+    optional float expParam = 5;
     enum DistributionType {
-        GAUSSION = 1;
+        GAUSSIAN = 1;
         UNIFORM = 2;
         EXPONENTIAL = 3;
     }   
-    required DistributionType distType = 3;
+    required DistributionType distType = 6;
+}
+
+message VectorValue {
+    optional float x = 1;
+    optional float y = 2;
+    optional float z = 3;
+    optional float theta = 4;
+    optional float accuracy = 5;
+}
+
+message SensorValue {
+    optional float scalarVal = 1;
+    optional VectorValue vecVal = 2;
+    optional int64 timestamp = 3;
+    optional float defaultVal = 4;
 }
 
 message Param {
-    optional float constantValue = 1;
+    optional SensorValue constantValue = 1;
     optional float delay = 2;
     optional Perturb perturb = 3;
+}
+
+message DateTime {
+    required int64 fromDate = 1;
+    required int64 toDate = 2;
 }
 
 message Action {
@@ -41,10 +64,10 @@ message Rule {
     required int32 sensorType = 2;
     required string pkgName = 3;
     required uint32 pkgUid = 4;
-    required Action action = 5;
+    optional DateTime dateTime = 5;
+    required Action action = 6;
 }
 
 message FirewallConfig {
     repeated Rule rule = 1;
 }
-

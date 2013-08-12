@@ -35,9 +35,6 @@
 
 #include "SensorInterface.h"
 
-//#include "SensorPerturb.h"
-//#include "PrivacyRules.h"
-
 // ---------------------------------------------------------------------------
 
 #define DEBUG_CONNECTIONS   false
