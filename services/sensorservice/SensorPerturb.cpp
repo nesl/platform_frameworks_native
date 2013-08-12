@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <hardware/sensors.h>
 #include <utils/Log.h>
+#include <time.h>
 
 #include "SensorPerturb.h"
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
@@ -97,15 +98,18 @@ size_t SensorPerturb::transformData(
             if ((counter->appEntry(ii).uid == uid) 
                 && (strcmp(counter->appEntry(ii).pkgName, pkgName) == 0)) {
                 counter->appEntry(ii).sensorEntry(sensorType) += (end_pos - start_pos + 1);
+                counter->appEntry(ii).set_lastUpdate((long)time(NULL));
                 flag = true;
             }                
         }
 
         if (!flag) {
             AppEntry *aEntry = counter->add_appEntry();
-            SensorEntry *sEntry = NULL:
             aEntry->set_uid(uid);
             aEntry->set_pkgName(pkgName);
+            aEntry->set_lastUpdate((long)time(NULL));
+
+            SensorEntry *sEntry = NULL:
             for (ii = 0; ii < NUM_SENSORTYPE; ii++) {
                 sEntry = aEntry->add_sensorEntry();
                 sEntry->set_count(0);
