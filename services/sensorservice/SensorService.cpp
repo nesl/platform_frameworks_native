@@ -55,8 +55,7 @@
 #include "SensorService.h"
 #include "PrivacyRules.h"
 #include "SensorPerturb.h"
-#include "SensorCount.h"
- #include "frameworks/native/services/sensorservice/SensorCountMessages.pb.h"
+#include "frameworks/native/services/sensorservice/SensorCountMessages.pb.h"
 
 using namespace android_sensorfirewall;
 
