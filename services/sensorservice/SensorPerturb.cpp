@@ -5,6 +5,7 @@
 #include <utils/Log.h>
 #include <time.h>
 #include <iostream>
+#include <fstream>
 
 #include "SensorPerturb.h"
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
@@ -74,7 +75,7 @@ void SensorPerturb::suppressData(
     }
 }
 
-bool WriteStringToFile(const char* filename, const std::string& data) {
+bool SensorPerturb::WriteStringToFile(const char* filename, const std::string& data) {
     std::fstream ofs(filename, std::ios::out | std::ios::binary);
     if (!ofs) {
         ALOGE("Failed to open file %s", filename);
@@ -86,7 +87,7 @@ bool WriteStringToFile(const char* filename, const std::string& data) {
     return true;
 }
 
-bool WriteFirewallConfig() {
+bool SensorPerturb::WriteFirewallConfig() {
     std::string data;
     if (!counter->SerializeToString(&data)) {
         ALOGE("SensorCounter: Failed to serialize to string.");
@@ -102,7 +103,7 @@ bool WriteFirewallConfig() {
 }
 
 
-void PrintFirewallConfig() {
+void SensorPerturb::PrintFirewallConfig() {
     for (int ii = 0; ii < counter->appentry_size(); ++ii) {
         const AppEntry& appentry = counter->appentry(ii);
         ALOGD("pkgName = %s: pkgUid = %d:", appentry.pkgname().c_str(), appentry.uid());
@@ -148,10 +149,8 @@ size_t SensorPerturb::transformData(
         }
 
         if ((cur_time - start_time) >= 60) {
-            PrintFirewallConfig(*counter);
-            if (!WriteFirewallConfig(*counter)) {
-                ALOGE("SensorCounter: Error write to file.");
-            }
+            PrintFirewallConfig();
+            WriteFirewallConfig();
             start_time = cur_time;
         }
 
