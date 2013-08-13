@@ -17,6 +17,7 @@ void SensorPerturb::initCounter()
 {
     // should also add code to read previously existing file
     counter = new SensorCounter();
+    start_time = (long)time(NULL);
 
 }
 
@@ -72,10 +73,35 @@ void SensorPerturb::suppressData(
     }
 }
 
+bool WriteFirewallConfig(const SensorCounter& sensorCounter) {
+    std::string data;
+    if (!sensorCounter.SerializeToString(&data)) {
+        ALOGE("SensorCounter: Failed to serialize to string.");
+        return false;
+    }
+
+    if (!WriteStringToFile(kSensorCounterFilename, data)) {
+      ALOGE("SensorCounter: Failed to write serialized string to file.");
+      return false;
+    }
+
+    return true;
+}
+
+
+void PrintFirewallConfig(const SensorCounter& sensorCounter) {
+    for (int ii = 0; ii < sensorCounter.appentry_size(); ++ii) {
+        const AppEntry appentry = sensorCounter.appentry(ii);
+        ALOGD("pkgName = %s: pkgUid = %d:", appentry.pkgname().c_str(), appentry.pkguid());
+        for (int j = 0; j < appentry.sensorentry_size(); ++j) {
+            ALOGD("sensorType = %d, count = %d", j, appentry.sensorentry(j).count());
+        }
+    }
+}
+
 size_t SensorPerturb::transformData(
         uid_t uid, const char* pkgName, sensors_event_t* scratch, 
-        size_t count, PrivacyRules* mPrivacyRules )
-{
+        size_t count, PrivacyRules* mPrivacyRules ) {
     size_t start_pos, end_pos;
     size_t i=0;
     ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
@@ -100,10 +126,20 @@ size_t SensorPerturb::transformData(
                 counter->mutable_appentry(ii)->mutable_sensorentry(sensorType)->set_count(
                     counter->appentry(ii).sensorentry(sensorType).count() 
                     + (end_pos - start_pos + 1));
-                long cur = (long)time(NULL);
-                counter->mutable_appentry(ii)->set_lastupdate(cur);
+                cur_time = (long)time(NULL);
+                counter->mutable_appentry(ii)->set_lastupdate(cur_time);
                 flag = true;
+
+                ALOGD("package %s sensor %d count=%ld\n", pkgName, sensorType, counter->appentry(ii).sensorentry(sensorType).count());
             }                
+        }
+
+        if ((cur_time - start_time) >= 60) {
+            PrintFirewallConfig(*counter);
+            if (!WriteFirewallConfig(*counter)) {
+                ALOGE("SensorCounter: Error write to file.");
+            }
+            start_time = cur_time;
         }
 
         if (!flag) {
