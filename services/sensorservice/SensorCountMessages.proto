@@ -3,7 +3,7 @@ package android_sensorfirewall;
 option optimize_for = LITE_RUNTIME;
 
 message SensorEntry {
-	required uint64 count = 1;
+	required int64 count = 1;
 }
 
 message AppEntry {
