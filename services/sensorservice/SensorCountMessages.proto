@@ -7,7 +7,7 @@ message SensorEntry {
 }
 
 message AppEntry {
-	required int32 uid = 1;
+	required uint32 uid = 1;
 	required string pkgName = 2;
 	required uint64 lastUpdate = 3;
 	repeated SensorEntry sensorEntry = 4;
