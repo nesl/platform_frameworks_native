@@ -9,7 +9,6 @@
 #include "frameworks/native/services/sensorservice/SensorCountMessages.pb.h"
 
 #define NUM_SENSORTYPE 20
-const char* kSensorCounterFilename = "/data/sensor-counter";
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

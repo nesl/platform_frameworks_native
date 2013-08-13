@@ -94,7 +94,7 @@ bool SensorPerturb::WriteFirewallConfig() {
         return false;
     }
 
-    if (!WriteStringToFile(kSensorCounterFilename, data)) {
+    if (!WriteStringToFile("/data/sensor-counter", data)) {
       ALOGE("SensorCounter: Failed to write serialized string to file.");
       return false;
     }
