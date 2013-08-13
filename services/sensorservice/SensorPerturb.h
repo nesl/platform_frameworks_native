@@ -27,8 +27,8 @@ private:
     void suppressData(sensors_event_t* scratch, size_t start_pos,
             size_t end_pos, size_t count);
     void PrintFirewallConfig();
-    bool SensorPerturb::WriteStringToFile(const char* filename, const std::string& data);
-    bool SensorPerturb::WriteFirewallConfig();
+    bool WriteStringToFile(const char* filename, const std::string& data);
+    bool WriteFirewallConfig();
 public:
 	void initCounter();
     size_t transformData(uid_t uid, const char* pkgName, sensors_event_t* scratch,
