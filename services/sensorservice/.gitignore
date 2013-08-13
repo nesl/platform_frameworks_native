@@ -1,2 +1,5 @@
 SensorCount.h
+*.pb.h
+*.pb.cc
+*pb2.py
 tags

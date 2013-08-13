@@ -94,24 +94,26 @@ size_t SensorPerturb::transformData(
 
         // Update count in SensorCounter here
         flag = false;
-        for (ii = 0; ii < counter->appEntry_size(); ii++) {
-            if ((counter->appEntry(ii).uid == uid) 
-                && (strcmp(counter->appEntry(ii).pkgName, pkgName) == 0)) {
-                counter->appEntry(ii).sensorEntry(sensorType) += (end_pos - start_pos + 1);
-                counter->appEntry(ii).set_lastUpdate((long)time(NULL));
+        for (ii = 0; ii < counter->appentry_size(); ii++) {
+            if ((counter->appentry(ii).uid == uid) 
+                && (strcmp(counter->appentry(ii).pkgname, pkgName) == 0)) {
+                counter->appentry(ii).sensorentry(sensorType).set_count(
+                    counter->appentry(ii).sensorentry(sensorType).count 
+                    + (end_pos - start_pos + 1));
+                counter->appentry(ii).set_lastupdate((long)time(NULL));
                 flag = true;
             }                
         }
 
         if (!flag) {
-            AppEntry *aEntry = counter->add_appEntry();
+            AppEntry *aEntry = counter->add_appentry();
             aEntry->set_uid(uid);
-            aEntry->set_pkgName(pkgName);
-            aEntry->set_lastUpdate((long)time(NULL));
+            aEntry->set_pkgname(pkgName);
+            aEntry->set_lastupdate((long)time(NULL));
 
-            SensorEntry *sEntry = NULL:
+            SensorEntry *sEntry = NULL;
             for (ii = 0; ii < NUM_SENSORTYPE; ii++) {
-                sEntry = aEntry->add_sensorEntry();
+                sEntry = aEntry->add_sensorentry();
                 sEntry->set_count(0);
             }
         }
