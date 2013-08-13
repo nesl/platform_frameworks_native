@@ -97,11 +97,11 @@ size_t SensorPerturb::transformData(
         for (ii = 0; ii < counter->appentry_size(); ii++) {
             if ((counter->appentry(ii).uid() == uid) 
                 && (strcmp(counter->appentry(ii).pkgname().c_str(), pkgName) == 0)) {
-                counter->mutable_appentry(ii).mutable_sensorentry(sensorType).set_count(
+                counter->mutable_appentry(ii)->mutable_sensorentry(sensorType)->set_count(
                     counter->appentry(ii).sensorentry(sensorType).count() 
                     + (end_pos - start_pos + 1));
                 long cur = (long)time(NULL);
-                counter->mutable_appentry(ii).set_lastupdate(cur);
+                counter->mutable_appentry(ii)->set_lastupdate(cur);
                 flag = true;
             }                
         }
