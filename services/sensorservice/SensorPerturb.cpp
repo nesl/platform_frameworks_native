@@ -95,8 +95,8 @@ size_t SensorPerturb::transformData(
         // Update count in SensorCounter here
         flag = false;
         for (ii = 0; ii < counter->appentry_size(); ii++) {
-            if ((counter->appentry(ii).uid == uid) 
-                && (strcmp(counter->appentry(ii).pkgname, pkgName) == 0)) {
+            if ((counter->appentry(ii).uid() == uid) 
+                && (strcmp(counter->appentry(ii).pkgname(), pkgName) == 0)) {
                 counter->appentry(ii).sensorentry(sensorType).set_count(
                     counter->appentry(ii).sensorentry(sensorType).count 
                     + (end_pos - start_pos + 1));
