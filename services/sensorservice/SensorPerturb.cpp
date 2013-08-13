@@ -4,6 +4,7 @@
 #include <hardware/sensors.h>
 #include <utils/Log.h>
 #include <time.h>
+#include <iostream>
 
 #include "SensorPerturb.h"
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
@@ -73,9 +74,21 @@ void SensorPerturb::suppressData(
     }
 }
 
-bool WriteFirewallConfig(const SensorCounter& sensorCounter) {
+bool WriteStringToFile(const char* filename, const std::string& data) {
+    std::fstream ofs(filename, std::ios::out | std::ios::binary);
+    if (!ofs) {
+        ALOGE("Failed to open file %s", filename);
+        return false;
+    }
+
+    ofs << data;
+    ofs.close();
+    return true;
+}
+
+bool WriteFirewallConfig() {
     std::string data;
-    if (!sensorCounter.SerializeToString(&data)) {
+    if (!counter->SerializeToString(&data)) {
         ALOGE("SensorCounter: Failed to serialize to string.");
         return false;
     }
@@ -89,12 +102,12 @@ bool WriteFirewallConfig(const SensorCounter& sensorCounter) {
 }
 
 
-void PrintFirewallConfig(const SensorCounter& sensorCounter) {
-    for (int ii = 0; ii < sensorCounter.appentry_size(); ++ii) {
-        const AppEntry appentry = sensorCounter.appentry(ii);
-        ALOGD("pkgName = %s: pkgUid = %d:", appentry.pkgname().c_str(), appentry.pkguid());
+void PrintFirewallConfig() {
+    for (int ii = 0; ii < counter->appentry_size(); ++ii) {
+        const AppEntry& appentry = counter->appentry(ii);
+        ALOGD("pkgName = %s: pkgUid = %d:", appentry.pkgname().c_str(), appentry.uid());
         for (int j = 0; j < appentry.sensorentry_size(); ++j) {
-            ALOGD("sensorType = %d, count = %d", j, appentry.sensorentry(j).count());
+            ALOGD("sensorType = %d, count = %lld", j, appentry.sensorentry(j).count());
         }
     }
 }
@@ -130,7 +143,7 @@ size_t SensorPerturb::transformData(
                 counter->mutable_appentry(ii)->set_lastupdate(cur_time);
                 flag = true;
 
-                ALOGD("package %s sensor %d count=%ld\n", pkgName, sensorType, counter->appentry(ii).sensorentry(sensorType).count());
+                ALOGD("package %s sensor %d count=%lld\n", pkgName, sensorType, counter->appentry(ii).sensorentry(sensorType).count());
             }                
         }
 
