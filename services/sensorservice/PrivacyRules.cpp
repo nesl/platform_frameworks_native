@@ -42,7 +42,6 @@ namespace android {
     }
 
     void PrivacyRules::clear() {
-        ALOGD("Number of entries before clearing = %d\n", rulesTbl->size());
         if(rulesTbl->size() != 0) {
             rulesTbl->clear();
             configLength = rulesTbl->size();
