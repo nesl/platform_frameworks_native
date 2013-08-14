@@ -11,16 +11,30 @@
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
 #include "PrivacyRules.h"
 #include "frameworks/native/services/sensorservice/SensorCountMessages.pb.h"
+//#include "FirewallConfigUtils-inl.h"
 
 using namespace android_sensorfirewall;
 namespace android {
 // ---------------------------------------------------------------------------
+
+void SensorPerturb::getDayTime(int* currDay, int* currHour, int* currMin) {
+    char day[2], hour[3], min[3];
+    time_t t = time(NULL);
+    struct tm *timeInfo;
+    timeInfo = localtime(&t); 
+    strftime(day, sizeof(day), "%w", timeInfo); 
+    strftime(hour, sizeof(hour), "%H", timeInfo); 
+    strftime(min, sizeof(min), "%M", timeInfo); 
+    *currDay = atoi(day); 
+    *currHour = atoi(hour); 
+    *currMin = atoi(min);
+}
+
 void SensorPerturb::initCounter() 
 {
     // should also add code to read previously existing file
     counter = new SensorCounter();
     start_time = (long)time(NULL);
-
 }
 
 float SensorPerturb::unifRand(float a, float b) {
@@ -203,14 +217,16 @@ bool SensorPerturb::WriteStringToFile(const char* filename, const std::string& d
     return true;
 }
 
-bool SensorPerturb::WriteFirewallConfig() {
+//TODO: put this in the configUtils.h file
+bool SensorPerturb::WriteSensorCounters() {
     std::string data;
+    const char* counterFileName = "/data/sensor-counter";
     if (!counter->SerializeToString(&data)) {
         ALOGE("SensorCounter: Failed to serialize to string.");
         return false;
     }
 
-    if (!WriteStringToFile("/data/sensor-counter", data)) {
+    if (!SensorPerturb::WriteStringToFile(counterFileName, data)) {
       ALOGE("SensorCounter: Failed to write serialized string to file.");
       return false;
     }
@@ -218,8 +234,8 @@ bool SensorPerturb::WriteFirewallConfig() {
     return true;
 }
 
-
-void SensorPerturb::PrintFirewallConfig() {
+//TODO: put this in the configUtils.h file
+void SensorPerturb::PrintSensorCounters() {
     for (int ii = 0; ii < counter->appentry_size(); ++ii) {
         const AppEntry& appentry = counter->appentry(ii);
         ALOGD("pkgName = %s: pkgUid = %d:", appentry.pkgname().c_str(), appentry.uid());
@@ -229,61 +245,68 @@ void SensorPerturb::PrintFirewallConfig() {
     }
 }
 
-size_t SensorPerturb::transformData(
-        uid_t uid, const char* pkgName, sensors_event_t* scratch, 
-        size_t count, PrivacyRules* mPrivacyRules ) {
-    size_t start_pos, end_pos;
-    size_t i=0;
-    ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
+void SensorPerturb::updateCounters(size_t count, size_t start_pos, 
+        size_t end_pos, uid_t uid, const char* pkgName, const int32_t sensorType) {
 
     int ii = 0;
     bool flag = false;
 
+    // Update count in SensorCounter here
+    flag = false;
+    for (ii = 0; ii < counter->appentry_size(); ii++) {
+        if ((counter->appentry(ii).uid() == uid) 
+            && (strcmp(counter->appentry(ii).pkgname().c_str(), pkgName) == 0)) {
+            counter->mutable_appentry(ii)->mutable_sensorentry(sensorType)->set_count(
+                counter->appentry(ii).sensorentry(sensorType).count() 
+                + (end_pos - start_pos + 1));
+            curr_time = (long)time(NULL);
+            counter->mutable_appentry(ii)->set_lastupdate(curr_time);
+            flag = true;
+            ALOGD("package %s sensor %d count=%lld\n", pkgName, sensorType, counter->appentry(ii).sensorentry(sensorType).count());
+        }                
+    }
+
+    if ((curr_time - start_time) >= 60) {
+        SensorPerturb::PrintSensorCounters();
+        SensorPerturb::WriteSensorCounters();
+        start_time = curr_time;
+    }
+
+    if (!flag) {
+        AppEntry *aEntry = counter->add_appentry();
+        aEntry->set_uid(uid);
+        aEntry->set_pkgname(pkgName);
+        aEntry->set_lastupdate((long)time(NULL));
+
+        SensorEntry *sEntry = NULL;
+        for (ii = 0; ii < NUM_SENSORTYPE; ii++) {
+            sEntry = aEntry->add_sensorentry();
+            sEntry->set_count(0);
+        }
+    }
+}
+
+size_t SensorPerturb::transformData(
+        uid_t uid, const char* pkgName, sensors_event_t* scratch, 
+        size_t count, PrivacyRules* mPrivacyRules ) {
+
+    size_t start_pos, end_pos;
+    size_t i = 0;
+    bool toUpdateCounter;
+
+    ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
+
     while (i < count) {
         const int32_t sensorType = scratch[i].type;
         start_pos = i;
+        toUpdateCounter = true;
+
         while((i < count) && (scratch[i].type == sensorType)) {
                 i++;
         }
         end_pos = i-1;
 
-        // Update count in SensorCounter here
-        flag = false;
-        for (ii = 0; ii < counter->appentry_size(); ii++) {
-            if ((counter->appentry(ii).uid() == uid) 
-                && (strcmp(counter->appentry(ii).pkgname().c_str(), pkgName) == 0)) {
-                counter->mutable_appentry(ii)->mutable_sensorentry(sensorType)->set_count(
-                    counter->appentry(ii).sensorentry(sensorType).count() 
-                    + (end_pos - start_pos + 1));
-                cur_time = (long)time(NULL);
-                counter->mutable_appentry(ii)->set_lastupdate(cur_time);
-                flag = true;
-
-                ALOGD("package %s sensor %d count=%lld\n", pkgName, sensorType, counter->appentry(ii).sensorentry(sensorType).count());
-            }                
-        }
-
-        if ((cur_time - start_time) >= 60) {
-            PrintFirewallConfig();
-            WriteFirewallConfig();
-            start_time = cur_time;
-        }
-
-        if (!flag) {
-            AppEntry *aEntry = counter->add_appentry();
-            aEntry->set_uid(uid);
-            aEntry->set_pkgname(pkgName);
-            aEntry->set_lastupdate((long)time(NULL));
-
-            SensorEntry *sEntry = NULL;
-            for (ii = 0; ii < NUM_SENSORTYPE; ii++) {
-                sEntry = aEntry->add_sensorentry();
-                sEntry->set_count(0);
-            }
-        }
-
         // Transfrom data
-        //ALOGD("transformData: sensortype = %d\n", sensorType);
         const ruleKey_t* mKey = mPrivacyRules->generateKey(uid, sensorType, pkgName);
         const Rule* rule = mPrivacyRules->findRule(mKey);
         if(rule) {
@@ -294,6 +317,7 @@ size_t SensorPerturb::transformData(
                     SensorPerturb::suppressData(scratch, start_pos, end_pos, count);
                     i = start_pos;
                     count = count - (end_pos - start_pos + 1);
+                    toUpdateCounter = false;
                     ALOGD("Suppressing Data");
                     break;
                 case Action::ACTION_CONSTANT: 
@@ -313,6 +337,10 @@ size_t SensorPerturb::transformData(
                 default:
                     ALOGD("No Changes applied");
             }
+        }
+
+        if(toUpdateCounter) {
+            SensorPerturb::updateCounters(count, start_pos, end_pos, uid, pkgName, sensorType);
         }
    }
     return count;

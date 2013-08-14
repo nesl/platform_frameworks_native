@@ -87,7 +87,6 @@ bool WriteFirewallConfig(const FirewallConfig& firewallConfig) {
     return true;
 }
 
-
 void PrintFirewallConfig(const FirewallConfig& firewallConfig) {
     for (int ii = 0; ii < firewallConfig.rule_size(); ++ii) {
         const Rule& rule = firewallConfig.rule(ii);

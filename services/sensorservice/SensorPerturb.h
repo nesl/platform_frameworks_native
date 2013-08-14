@@ -20,7 +20,8 @@ class SensorPerturb {
 private:
     SensorCounter *counter;
     long start_time;
-	long cur_time;
+	long curr_time;
+    void getDayTime(int* currDay, int* currHour, int* currMin);
     float unifRand(float a, float b);
     float normal(float mean, float stdDev);
     float expo(float param);
@@ -31,9 +32,11 @@ private:
             size_t end_pos, const int32_t sensorType, const Param* param);
     void suppressData(sensors_event_t* scratch, size_t start_pos,
             size_t end_pos, size_t count);
-    void PrintFirewallConfig();
     bool WriteStringToFile(const char* filename, const std::string& data);
-    bool WriteFirewallConfig();
+    bool WriteSensorCounters();
+    void PrintSensorCounters();
+    void updateCounters(size_t count, size_t start_pos,
+        size_t end_pos, uid_t uid, const char* pkgName, const int32_t sensorType);
 public:
     void initCounter();
     size_t transformData(uid_t uid, const char* pkgName, sensors_event_t* scratch,

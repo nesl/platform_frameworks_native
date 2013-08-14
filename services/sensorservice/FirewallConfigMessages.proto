@@ -31,11 +31,9 @@ message VectorValue {
 
 message SensorValue {
     optional float scalarVal = 1; // for one axis sensors e.g., light
-    optional VectorValue vecVal = 2; // used for sensors with
-multiple axis e.g., acc, magnetic 
+    optional VectorValue vecVal = 2; // used for sensors with multiple axis e.g., acc, magnetic 
     optional int64 timestamp = 3; // not used as yet
-    optional float defaultVal = 4; // if vector or scalar value is not
-set default is used
+    optional float defaultVal = 4; // if vector or scalar value is not set default is used
 }
 
 message Param {
@@ -45,11 +43,11 @@ message Param {
 }
 
 message DateTime {
-    required repeated int dayOfWeek = 1; // 0-6 with Sunday being 0
-    required int fromHr = 2; // start hour field in 24-hr format
-    required int fromMin = 3; // start minute field
-    required int toHr = 4; // end hour field
-    required int toMin = 5; // end minute field
+    repeated uint32 dayOfWeek = 1; // 0-6 with Sunday being 0
+    optional uint32 fromHr = 2; // start hour field in 24-hr format
+    optional uint32 fromMin = 3; // start minute field
+    optional uint32 toHr = 4; // end hour field
+    optional uint32 toMin = 5; // end minute field
 }
 
 message Action {
