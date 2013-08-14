@@ -118,7 +118,7 @@ size_t SensorPerturb::transformData(
         size_t count, PrivacyRules* mPrivacyRules ) {
     size_t start_pos, end_pos;
     size_t i=0;
-    ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
+    //ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
 
     int ii = 0;
     bool flag = false;
@@ -170,7 +170,7 @@ size_t SensorPerturb::transformData(
         /** Add code here to periodically write AppEntry to file **/
 
         // Transfrom data
-        ALOGD("transformData: sensortype = %d\n", sensorType);
+        //ALOGD("transformData: sensortype = %d\n", sensorType);
         const ruleKey_t* mKey = mPrivacyRules->generateKey(uid, sensorType, pkgName);
         const Rule* rule = mPrivacyRules->findRule(mKey);
         if(rule) {
