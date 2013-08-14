@@ -18,9 +18,8 @@ namespace android {
 
 class SensorPerturb {
 private:
-<<<<<<< HEAD
-	SensorCounter *counter;
-	long start_time;
+    SensorCounter *counter;
+    long start_time;
 	long cur_time;
     float unifRand(float a, float b);
     float normal(float mean, float stdDev);
@@ -36,7 +35,7 @@ private:
     bool WriteStringToFile(const char* filename, const std::string& data);
     bool WriteFirewallConfig();
 public:
-	void initCounter();
+    void initCounter();
     size_t transformData(uid_t uid, const char* pkgName, sensors_event_t* scratch,
             size_t count, PrivacyRules* mPrivacyRules);
 };
