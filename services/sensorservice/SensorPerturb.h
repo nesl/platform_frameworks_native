@@ -21,7 +21,10 @@ private:
     SensorCounter *counter;
     long start_time;
 	long curr_time;
-    void getDayTime(int* currDay, int* currHour, int* currMin);
+    void getDayTime(uint32_t* currDay, uint32_t* currHour, uint32_t* currMin);
+    bool applyAtThisTime(uint32_t currHour, uint32_t currMin, const DateTime* dateTime);
+    bool applyOnThisDay(uint32_t currDay, const DateTime* dateTime);
+    bool isRuleTimeApplicable(const Rule* rule);
     float unifRand(float a, float b);
     float normal(float mean, float stdDev);
     float expo(float param);

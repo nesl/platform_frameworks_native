@@ -11,13 +11,12 @@
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
 #include "PrivacyRules.h"
 #include "frameworks/native/services/sensorservice/SensorCountMessages.pb.h"
-//#include "FirewallConfigUtils-inl.h"
 
 using namespace android_sensorfirewall;
 namespace android {
 // ---------------------------------------------------------------------------
 
-void SensorPerturb::getDayTime(int* currDay, int* currHour, int* currMin) {
+void SensorPerturb::getDayTime(uint32_t* currDay, uint32_t* currHour, uint32_t* currMin) {
     char day[2], hour[3], min[3];
     time_t t = time(NULL);
     struct tm *timeInfo;
@@ -28,6 +27,82 @@ void SensorPerturb::getDayTime(int* currDay, int* currHour, int* currMin) {
     *currDay = atoi(day); 
     *currHour = atoi(hour); 
     *currMin = atoi(min);
+}
+
+bool SensorPerturb::applyAtThisTime(uint32_t currHour, uint32_t currMin, const DateTime* dateTime) {
+    bool applyRule;
+    uint32_t currTime, fromTime, toTime;
+
+    currTime = currHour*60 + currMin;
+    fromTime = dateTime->fromhr()*60 + dateTime->frommin();
+    toTime = dateTime->tohr()*60 + dateTime->tomin();
+
+    if( dateTime->tohr() >= dateTime->fromhr() ) {
+        if((currTime >= fromTime) && (currTime <= toTime))
+            applyRule = true;
+        else
+            applyRule = false;
+    }
+    else {
+        if((currTime >= toTime) && (currTime <= fromTime))
+            applyRule = false;
+        else
+            applyRule = true;
+    }
+    return applyRule;
+}
+
+bool SensorPerturb::applyOnThisDay(uint32_t currDay, const DateTime* dateTime) {
+    bool applyRule = false;
+    int i = 0;
+    while((i < dateTime->dayofweek_size()) && (!applyRule)) {
+        if(currDay == dateTime->dayofweek(i)) {
+            applyRule = true;
+        }
+        else
+            i++;
+    }
+    return applyRule;
+}
+
+bool SensorPerturb::isRuleTimeApplicable(const Rule* rule) {
+    bool applyRule = true;
+    uint32_t currDay, currHour, currMin;
+    SensorPerturb::getDayTime(&currDay, &currHour, &currMin);
+    if(rule) {
+        if(rule->has_datetime()) {
+            const DateTime* dateTime = &(rule->datetime());
+            int numDays = dateTime->dayofweek_size();
+            if(numDays != 0) {
+               if(SensorPerturb::applyOnThisDay(currDay, dateTime)) {
+                    if((dateTime->has_fromhr()) && (dateTime->has_tohr())) {
+                        if(!SensorPerturb::applyAtThisTime(currHour, currMin, dateTime)) {
+                            applyRule = false;
+                        }
+                    }
+                    else {
+                        ALOGD("Time is not set. Apply rule at all times");
+                    }
+                   // if time is not properly set will apply for all
+                   // times in that day. UI check should ensure the from
+                   // and to fields are both set.
+               }
+               else { // dont apply rule today
+                   applyRule = false;
+               } 
+            }
+            else { // consider the rule to be set for every day of the week
+                if((dateTime->has_fromhr()) && (dateTime->has_tohr())) {
+                    if(!SensorPerturb::applyAtThisTime(currHour, currMin, dateTime)) {
+                        applyRule = false;
+                    }
+                }
+                // apply this rule for every day for all times
+            }
+        }
+        // apply this rule for every day for all times
+    }
+    return applyRule;
 }
 
 void SensorPerturb::initCounter() 
@@ -310,32 +385,34 @@ size_t SensorPerturb::transformData(
         const ruleKey_t* mKey = mPrivacyRules->generateKey(uid, sensorType, pkgName);
         const Rule* rule = mPrivacyRules->findRule(mKey);
         if(rule) {
-            const Action* action = &rule->action();
-            const Param* param = &action->param();
-            switch(action->actiontype()) {
-                case Action::ACTION_SUPPRESS: 
-                    SensorPerturb::suppressData(scratch, start_pos, end_pos, count);
-                    i = start_pos;
-                    count = count - (end_pos - start_pos + 1);
-                    toUpdateCounter = false;
-                    ALOGD("Suppressing Data");
-                    break;
-                case Action::ACTION_CONSTANT: 
-                    SensorPerturb::constantData(scratch, start_pos, end_pos, sensorType, param);
-                    ALOGD("Constant Data");
-                    break;
-                case Action::ACTION_DELAY:
-                    ALOGD("Delay Data");
-                    break;
-                case Action::ACTION_PERTURB:
-                    SensorPerturb::perturbData(scratch, start_pos, end_pos, sensorType, param);
-                    ALOGD("Perturb Data");
-                    break;
-                case Action::ACTION_PASSTHROUGH:
-                    ALOGD("No changes applied");
-                    break;
-                default:
-                    ALOGD("No Changes applied");
+            if(SensorPerturb::isRuleTimeApplicable(rule)) {
+                const Action* action = &rule->action();
+                const Param* param = &action->param();
+                switch(action->actiontype()) {
+                    case Action::ACTION_SUPPRESS: 
+                        SensorPerturb::suppressData(scratch, start_pos, end_pos, count);
+                        i = start_pos;
+                        count = count - (end_pos - start_pos + 1);
+                        toUpdateCounter = false;
+                        ALOGD("Suppressing Data");
+                        break;
+                    case Action::ACTION_CONSTANT: 
+                        SensorPerturb::constantData(scratch, start_pos, end_pos, sensorType, param);
+                        ALOGD("Constant Data");
+                        break;
+                    case Action::ACTION_DELAY:
+                        ALOGD("Delay Data");
+                        break;
+                    case Action::ACTION_PERTURB:
+                        SensorPerturb::perturbData(scratch, start_pos, end_pos, sensorType, param);
+                        ALOGD("Perturb Data");
+                        break;
+                    case Action::ACTION_PASSTHROUGH:
+                        ALOGD("No changes applied");
+                        break;
+                    default:
+                        ALOGD("No Changes applied");
+                }
             }
         }
 
