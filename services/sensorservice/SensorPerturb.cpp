@@ -6,6 +6,11 @@
 #include <time.h>
 #include <iostream>
 #include <fstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 #include "SensorPerturb.h"
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
@@ -289,6 +294,14 @@ bool SensorPerturb::WriteStringToFile(const char* filename, const std::string& d
 
     ofs << data;
     ofs.close();
+
+    char mode[] = "0755";
+    int i = strtol(mode, 0, 8);
+    if (chmod (filename, i) < 0) {
+        ALOGE("Failed to chmod for file %s", filename);
+    } else {
+        ALOGD("Chmod 755 successfully %s", filename);
+    }
     return true;
 }
 
