@@ -66,9 +66,23 @@ BitTube::BitTube(const Parcel& data)
         fcntl(mReceiveFd, F_SETFL, O_NONBLOCK);
     } else {
         mReceiveFd = -errno;
-        ALOGE("BitTube(Parcel): can't dup filedescriptor (%s)",
+        ALOGE("BitTube(Parcel): can't dup receive filedescriptor (%s)",
                 strerror(-mReceiveFd));
     }
+
+    data.setDataPosition(data.get(Position) + sizeof(int));
+    mSendFd = dup(data.readFileDescriptor());
+    if (mSendFd >= 0) {
+        int size = SOCKET_BUFFER_SIZE;
+        setsockopt(mSendFd, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size));
+        setsockopt(mSendFd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
+        fcntl(mSendFd, F_SETFL, O_NONBLOCK);
+    } else {
+        mSendFd = -errno;
+        ALOGE("BitTube(Parcel): can't dup send filedescriptor (%s)",
+                strerror(-mSendFd));
+    }
+
 }
 
 BitTube::~BitTube()
@@ -91,6 +105,11 @@ status_t BitTube::initCheck() const
 int BitTube::getFd() const
 {
     return mReceiveFd;
+}
+
+int BitTube::getSendFd() const
+{
+    return mSendFd;
 }
 
 ssize_t BitTube::write(void const* vaddr, size_t size)

@@ -39,6 +39,7 @@ public:
 
     status_t initCheck() const;
     int getFd() const;
+    int getSendFd() const;
     ssize_t write(void const* vaddr, size_t size);
     ssize_t read(void* vaddr, size_t size);
 
@@ -57,7 +58,7 @@ public:
     }
 
 private:
-    int mSendFd;
+    mutable int mSendFd;
     mutable int mReceiveFd;
 
     static ssize_t sendObjects(const sp<BitTube>& tube,

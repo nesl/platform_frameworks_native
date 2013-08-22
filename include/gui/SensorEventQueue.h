@@ -54,11 +54,13 @@ public:
     virtual void onFirstRef();
 
     int getFd() const;
+    int getSendFd() const;
 
     static ssize_t write(const sp<BitTube>& tube,
             ASensorEvent const* events, size_t numEvents);
 
     ssize_t read(ASensorEvent* events, size_t numEvents);
+    ssize_t write(ASensorEvent const* events, size_t numEvents);
 
     status_t waitForEvent() const;
     status_t wake() const;

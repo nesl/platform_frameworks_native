@@ -53,10 +53,18 @@ int SensorEventQueue::getFd() const
     return mSensorChannel->getFd();
 }
 
+int SensorEventQueue::getSendFd() const
+{
+    return mSensorChannel->getSendFd();
+}
 
 ssize_t SensorEventQueue::write(const sp<BitTube>& tube,
         ASensorEvent const* events, size_t numEvents) {
     return BitTube::sendObjects(tube, events, numEvents);
+}
+
+ssize_t SensorEventQueue::write(ASensorEvent const* events, size_t numEvents) {
+    return BitTube::sendObjects(mSensorChannel, events, numEvents);
 }
 
 ssize_t SensorEventQueue::read(ASensorEvent* events, size_t numEvents)
