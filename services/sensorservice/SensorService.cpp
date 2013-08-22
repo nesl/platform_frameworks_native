@@ -713,7 +713,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
     ASensorEvent testEvent;
     ssize_t size_read = SensorEventQueue::read(mChannel, &testEvent, 1);
     if (size_read >= 0) {
-        ALOGD("read sensor_event from app, version=%d, sensor=%d", testEvent->version, testEvent->sensor);    
+        ALOGD("read sensor_event from app, version=%d, sensor=%d", testEvent.version, testEvent.sensor);    
     } else {
         ALOGD("didn't get anything from the sensor");
     }
