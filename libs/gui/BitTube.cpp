@@ -71,7 +71,7 @@ BitTube::BitTube(const Parcel& data)
     }
 
     /* test code to see if mSendFd can be casted as well */
-    data.setDataPosition(data.get(Position) + sizeof(int));
+    data.setDataPosition(data.dataPosition() + sizeof(int));
     mSendFd = dup(data.readFileDescriptor());
     if (mSendFd >= 0) {
         int size = SOCKET_BUFFER_SIZE;
