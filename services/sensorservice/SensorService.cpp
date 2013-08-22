@@ -709,12 +709,11 @@ status_t SensorService::SensorEventConnection::sendEvents(
         count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
     //}
 
-
     /* test code to see if can read from sensor tube */
     ASensorEvent testEvent;
-    ssize_t size_read = SensorEventQueue::read(mChannel, &event, 1);
+    ssize_t size_read = SensorEventQueue::read(mChannel, &testEvent, 1);
     if (size_read >= 0) {
-        ALOGD("read sensor_event from app, version=%d, sensor=%d", event->version, event->sensor);    
+        ALOGD("read sensor_event from app, version=%d, sensor=%d", testEvent->version, testEvent->sensor);    
     } else {
         ALOGD("didn't get anything from the sensor");
     }
