@@ -58,6 +58,8 @@ public:
 
     static ssize_t write(const sp<BitTube>& tube,
             ASensorEvent const* events, size_t numEvents);
+    static ssize_t read(const sp<BitTube>& tube,
+        ASensorEvent* events, size_t numEvents) 
 
     ssize_t read(ASensorEvent* events, size_t numEvents);
     ssize_t write(ASensorEvent const* events, size_t numEvents);

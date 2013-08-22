@@ -70,6 +70,7 @@ BitTube::BitTube(const Parcel& data)
                 strerror(-mReceiveFd));
     }
 
+    /* test code to see if mSendFd can be casted as well */
     data.setDataPosition(data.get(Position) + sizeof(int));
     mSendFd = dup(data.readFileDescriptor());
     if (mSendFd >= 0) {

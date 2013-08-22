@@ -67,6 +67,11 @@ ssize_t SensorEventQueue::write(ASensorEvent const* events, size_t numEvents) {
     return BitTube::sendObjects(mSensorChannel, events, numEvents);
 }
 
+ssize_t SensorEventQueue::read(const sp<BitTube>& tube,
+        ASensorEvent* events, size_t numEvents) {
+    return BitTube::recvObjects(tube, events, numEvents);
+}
+
 ssize_t SensorEventQueue::read(ASensorEvent* events, size_t numEvents)
 {
     return BitTube::recvObjects(mSensorChannel, events, numEvents);
