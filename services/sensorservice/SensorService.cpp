@@ -260,6 +260,10 @@ bool SensorService::threadLoop()
 
     const size_t numEventMax = 16;
     const size_t minBufferSize = numEventMax + numEventMax * mVirtualSensorList.size();
+
+    ALOGD("virtual sensor list size=%d", mVirtualSensorList.size());
+    ALOGD("minBufferSize=%d", minBufferSize);
+
     sensors_event_t buffer[minBufferSize];
     sensors_event_t scratch[minBufferSize];
     SensorDevice& device(SensorDevice::getInstance());
@@ -318,6 +322,8 @@ bool SensorService::threadLoop()
         // here buffer the events using "buffer" as a basic element
         // instead of using each sensor_event_t
         // do a sliding window, each time send one more buffer to the context engine
+
+
 
         // send our events to clients...
         const SortedVector< wp<SensorEventConnection> > activeConnections(

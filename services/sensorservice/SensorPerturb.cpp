@@ -350,12 +350,12 @@ void SensorPerturb::updateCounters(size_t count, size_t start_pos,
             curr_time = (long)time(NULL);
             counter->mutable_appentry(ii)->set_lastupdate(curr_time);
             flag = true;
-            ALOGD("package %s sensor %d count=%lld\n", pkgName, sensorType, counter->appentry(ii).sensorentry(sensorType).count());
+            //ALOGD("package %s sensor %d count=%lld\n", pkgName, sensorType, counter->appentry(ii).sensorentry(sensorType).count());
         }                
     }
 
     if ((curr_time - start_time) >= 60) {
-        SensorPerturb::PrintSensorCounters();
+        //SensorPerturb::PrintSensorCounters();
         SensorPerturb::WriteSensorCounters();
         start_time = curr_time;
     }
@@ -382,7 +382,7 @@ size_t SensorPerturb::transformData(
     size_t i = 0;
     bool toUpdateCounter;
 
-    ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
+   // ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
 
     while (i < count) {
         const int32_t sensorType = scratch[i].type;
