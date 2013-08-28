@@ -315,6 +315,10 @@ bool SensorService::threadLoop()
             }
         }
 
+        // here buffer the events using "buffer" as a basic element
+        // instead of using each sensor_event_t
+        // do a sliding window, each time send one more buffer to the context engine
+
         // send our events to clients...
         const SortedVector< wp<SensorEventConnection> > activeConnections(
                 getActiveConnections());
@@ -705,14 +709,14 @@ status_t SensorService::SensorEventConnection::sendEvents(
         count = numEvents;
     }
 
-    /* test code to see if can read from sensor tube */
-    ASensorEvent testEvent;
-    ssize_t size_read = SensorEventQueue::read(mChannel, &testEvent, 1);
-    if (size_read > 0) {
-        ALOGD("read sensor_event from app, version=%d, sensor=%d", testEvent.version, testEvent.sensor);    
-    } else {
-        ALOGD("didn't get anything from the sensor");
-    }
+    // /* test code to see if can read from sensor tube */
+    // ASensorEvent testEvent;
+    // ssize_t size_read = SensorEventQueue::read(mChannel, &testEvent, 1);
+    // if (size_read > 0) {
+    //     ALOGD("read sensor_event from app, version=%d, sensor=%d", testEvent.version, testEvent.sensor);    
+    // } else {
+    //     ALOGD("didn't get anything from the sensor");
+    // }
 
     // Check to exclude system service. Will do it in ruleApp.
     //if(getUid() >= 10000) { 
