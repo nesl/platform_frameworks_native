@@ -175,6 +175,11 @@ void SensorService::onFirstRef()
     // init counter in SensorPerturb
     mSensorPerturb.initCounter();
 
+    // clear the buffer
+    memset(swindow, 0, sizeof(swindow));
+    memset(last_buffer, 0, sizeof(last_buffer));
+    inf = false;
+    buffer_count = 0;
 }
 
 void SensorService::registerSensor(SensorInterface* s)
@@ -319,11 +324,17 @@ bool SensorService::threadLoop()
             }
         }
 
+        ALOGD("buffer count =%d", count);
+
         // here buffer the events using "buffer" as a basic element
         // instead of using each sensor_event_t
         // do a sliding window, each time send one more buffer to the context engine
 
+        if (buffer_count < 100) {
 
+        } else {
+
+        }
 
         // send our events to clients...
         const SortedVector< wp<SensorEventConnection> > activeConnections(

@@ -135,6 +135,12 @@ class SensorService :
     // The size of this vector is constant, only the items are mutable
     KeyedVector<int32_t, sensors_event_t> mLastEventSeen;
 
+    // save buffers to send to context engine
+    sensors_event_t swindow[100][20];
+    sensors_event_t last_buffer[20];
+    bool inf;
+    int buffer_count;
+
 public:
     static char const* getServiceName() { return "sensorservice"; }
 
