@@ -45,6 +45,15 @@ struct sensors_module_t;
 namespace android {
 // ---------------------------------------------------------------------------
 
+
+typedef struct bufferNode {
+    sensors_event_t buffer[20];
+    int buffer_count;
+    struct bufferNode* next;
+};
+
+typedef struct bufferNode Node;
+
 class SensorService :
         public BinderService<SensorService>,
         public BnSensorServer,
@@ -136,8 +145,12 @@ class SensorService :
     KeyedVector<int32_t, sensors_event_t> mLastEventSeen;
 
     // save buffers to send to context engine
-    sensors_event_t swindow[100][20];
-    sensors_event_t last_buffer[20];
+
+    // sensors_event_t last_buffer[20];
+
+    // should create a linked list here
+    int list_size;
+    Node *head, *curr;
     bool inf;
     int buffer_count;
 
