@@ -332,7 +332,7 @@ bool SensorService::threadLoop()
 
         // add the current buffer to the tail of the linked list
         Node *node = (Node *)malloc(sizeof(Node));
-        memset(node->buffer[i], 0, 20 * sizeof(sensors_event_t));
+        memset(node->buffer, 0, 20 * sizeof(sensors_event_t));
         int i = 0;
         for (i = 0; i < count; i++) {
             node->buffer[i] = buffer[i];
