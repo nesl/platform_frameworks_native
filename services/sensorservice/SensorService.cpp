@@ -335,20 +335,24 @@ bool SensorService::threadLoop()
         memset(node->buffer, 0, 20 * sizeof(sensors_event_t));
         int i = 0;
         for (i = 0; i < count; i++) {
+            ALOGD("copy buffer to the new node: #%d", i);
             node->buffer[i] = buffer[i];
         }
         node->buffer_count = count;
 
         if (head == NULL) {
+            ALOGD("HEAD is null, set the current node to head");
             head = node;
+            curr = head;
         } else {
+            ALGOD("HEAD is not null, add this node after the curr node");
             curr->next = node;
             curr = node;
         }
 
         list_size++;
 
-        if (list_size >= 50) {
+        if (list_size >= 30) {
             // reach the limit of the list
             // delete the first node and send it out!
             Node *temp = head;
@@ -356,13 +360,15 @@ bool SensorService::threadLoop()
 
             // if this is good to send to all apps
             if (!inf) {
+                ALOGD("try to send the current head to the apps");
                 // copy the buffer from this head node
                 memset(buffer, 0, sizeof(buffer));
                 for (i = 0; i < temp->buffer_count; i++) {
+                    ALOGD("copy buffer from the new node for sending: #%d", i);
                     buffer[i] = temp->buffer[i];
                 }
 
-
+                ALGOD("send events to clients");
                 // send our events to clients...
                 const SortedVector< wp<SensorEventConnection> > activeConnections(
                         getActiveConnections());
@@ -376,8 +382,10 @@ bool SensorService::threadLoop()
                 }
 
             }
-            free(temp);
 
+            ALOGD("free the head node");
+            free(temp);
+            list_size--;
             
             // at the same time should send the "window" to the context engine
             // and see if there is any meaningful inference coming out of it
