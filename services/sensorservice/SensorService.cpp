@@ -337,7 +337,7 @@ bool SensorService::threadLoop()
         int i = 0;
         for (i = 0; i < count; i++) {
             ALOGD("copy buffer to the new node: #%d", i);
-            node->buffer[i] = buffer[i];
+            memcpynode->buffer[i] = buffer[i];
         }
         node->buffer_count = count;
 
@@ -394,7 +394,21 @@ bool SensorService::threadLoop()
 
             // sendToContextEngine(head);
             inf = inf;
-        } 
+        } else if (strcmp(getPkgName(), "system_server") == 0) {
+            ALGOD("this is system_server! send events to clients");
+            // send our events to clients...
+            const SortedVector< wp<SensorEventConnection> > activeConnections(
+                    getActiveConnections());
+            size_t numConnections = activeConnections.size();
+            for (size_t i=0 ; i<numConnections ; i++) {
+                sp<SensorEventConnection> connection(
+                        activeConnections[i].promote());
+                if (connection != 0) {
+                    connection->sendEvents(buffer, count, scratch);
+                }
+            }
+        }
+
 
 
     } while (count >= 0 || Thread::exitPending());
