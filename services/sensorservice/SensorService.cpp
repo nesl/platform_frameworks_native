@@ -330,7 +330,7 @@ bool SensorService::threadLoop()
         // instead of using each sensor_event_t
         // do a sliding window, each time send one more buffer to the context engine
 
-        if (strcmp(readPkgName(), "system_server")) {
+        if (strcmp(SensorService::SensorEventConnection::readPkgName(), "system_server")) {
             // add the current buffer to the tail of the linked list
             Node *node = new Node();
             ALOGD("after new node");
@@ -347,7 +347,7 @@ bool SensorService::threadLoop()
                 head = node;
                 curr = head;
             } else {
-                ALGOD("HEAD is not null, add this node after the curr node");
+                ALOGD("HEAD is not null, add this node after the curr node");
                 curr->next = node;
                 curr = node;
             }
@@ -370,7 +370,7 @@ bool SensorService::threadLoop()
                         buffer[i] = temp->buffer[i];
                     }
 
-                    ALGOD("send events to clients");
+                    ALOGD("send events to clients");
                     // send our events to clients...
                     const SortedVector< wp<SensorEventConnection> > activeConnections(
                             getActiveConnections());
@@ -398,7 +398,7 @@ bool SensorService::threadLoop()
             }
         } 
         else {
-            ALGOD("this is system_server! send events to clients");
+            ALOGD("this is system_server! send events to clients");
             // send our events to clients...
             const SortedVector< wp<SensorEventConnection> > activeConnections(
                     getActiveConnections());
