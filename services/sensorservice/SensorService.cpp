@@ -57,6 +57,9 @@
 #include "SensorPerturb.h"
 #include "frameworks/native/services/sensorservice/SensorCountMessages.pb.h"
 
+// if enable the sliding window and context-engine check before send
+#define DELAY_SEND true
+
 using namespace android_sensorfirewall;
 
 namespace android {
@@ -326,91 +329,133 @@ bool SensorService::threadLoop()
 
         ALOGD("buffer count =%d, type=%d", count, buffer[0].sensor);
 
-        // here buffer the events using "buffer" as a basic element
-        // instead of using each sensor_event_t
-        // do a sliding window, each time send one more buffer to the context engine
+        // see if enable the sliding window and context-engine check before send
+        if (DELAY_SEND) {
+            // here buffer the events using "buffer" as a basic element
+            // instead of using each sensor_event_t
+            // do a sliding window, each time send one more buffer to the context engine
 
-        // add the current buffer to the tail of the linked list
-        Node *node = new Node();
-        ALOGD("after new node");
-        //memset(node->buffer, 0, 20 * sizeof(sensors_event_t));
-        int i = 0;
-        for (i = 0; i < count; i++) {
-            ALOGD("copy buffer to the new node: #%d", i);
-            node->buffer[i] = buffer[i];
-        }
-        node->buffer_count = count;
+            // add the current buffer to the tail of the linked list
+            Node *node = new Node();
+            ALOGD("after new node");
+            //memset(node->buffer, 0, 20 * sizeof(sensors_event_t));
+            int i = 0;
+            for (i = 0; i < count; i++) {
+                ALOGD("copy buffer to the new node: #%d", i);
+                node->buffer[i] = buffer[i];
+            }
+            node->buffer_count = count;
 
-        if (head == NULL) {
-            ALOGD("HEAD is null, set the current node to head");
-            head = node;
-            curr = head;
-        } else {
-            ALOGD("HEAD is not null, add this node after the curr node");
-            curr->next = node;
-            curr = node;
-        }
-
-        list_size++;
-
-        bool send = false;
-
-        if (list_size >= 30) {
-            // reach the limit of the list
-            // delete the first node and send it out!
-            Node *temp = head;
-            head = head->next;
-
-            // if this is good to send to all apps
-            if (!inf) {
-                ALOGD("try to send the current head to the apps");
-                // copy the buffer from this head node
-                memset(buffer, 0, sizeof(buffer));
-                for (i = 0; i < temp->buffer_count; i++) {
-                    ALOGD("copy buffer from the new node for sending: #%d", i);
-                    buffer[i] = temp->buffer[i];
-                }
-
-                send = true;
-
-                ALOGD("send events to clients");
-                // send our events to clients...
-                const SortedVector< wp<SensorEventConnection> > activeConnections(
-                        getActiveConnections());
-                size_t numConnections = activeConnections.size();
-                for (size_t i=0 ; i<numConnections ; i++) {
-                    sp<SensorEventConnection> connection(
-                            activeConnections[i].promote());
-                    if (connection != 0) {
-                        connection->sendEvents(buffer, count, scratch);
-                    }
-                }
-
+            if (head == NULL) {
+                ALOGD("HEAD is null, set the current node to head");
+                head = node;
+                curr = head;
+            } else {
+                ALOGD("HEAD is not null, add this node after the curr node");
+                curr->next = node;
+                curr = node;
             }
 
-            ALOGD("free the head node");
-            free(temp);
-            list_size--;
-            
-            // at the same time should send the "window" to the context engine
-            // and see if there is any meaningful inference coming out of it
-            // -- change the value of inf
+            list_size++;
 
-            // sendToContextEngine(head);
-            inf = inf;
+            bool send = false;
 
-            if (!send) {
-                ALOGD("send events to system_server");
-                // send our events to clients...
+            if (list_size >= 30) {
+                // reach the limit of the list
+                // delete the first node and send it out!
+                Node *temp = head;
+                head = head->next;
+
+                // if this is good to send to all apps
+                if (!inf) {
+                    ALOGD("try to send the current head to the apps");
+                    // copy the buffer from this head node
+                    memset(buffer, 0, sizeof(buffer));
+                    for (i = 0; i < temp->buffer_count; i++) {
+                        ALOGD("copy buffer from the new node for sending: #%d", i);
+                        buffer[i] = temp->buffer[i];
+                    }
+
+                    send = true;
+
+                    ALOGD("send events to clients");
+                    // send our events to clients...
+                    const SortedVector< wp<SensorEventConnection> > activeConnections(
+                            getActiveConnections());
+                    size_t numConnections = activeConnections.size();
+                    for (size_t i=0 ; i<numConnections ; i++) {
+                        sp<SensorEventConnection> connection(
+                                activeConnections[i].promote());
+                        if (connection != 0) {
+                            connection->sendEvents(buffer, count, scratch);
+                        }
+                    }
+
+                }
+
+                ALOGD("free the head node");
+                free(temp);
+                list_size--;
+                
+                // at the same time should send the "window" to the context engine
+                // flat the list
+                sensors_event_t window_buffer[30];
+                memset(window_buffer, 0, sizeof(window_buffer));
+                temp = head;
+                int kk = 0;
+                int ii = 0;
+                do {
+                    for (ii = 0; ii < temp->buffer_count; ii++) {
+                        window_buffer[kk] = temp->buffer[ii];
+                        kk++;
+                    }
+                    temp = temp->next;
+                } while (temp != NULL);
+
+                // send our events to context engine
+                ALOGD("send events to context engine");
                 const SortedVector< wp<SensorEventConnection> > activeConnections(
                         getActiveConnections());
                 size_t numConnections = activeConnections.size();
 
                 for (size_t i=0 ; i<numConnections ; i++) {
                     sp<SensorEventConnection> connection(activeConnections[i].promote());
-                    if ((connection != 0) && (strcmp(connection->getPkgName(), "system_server") == 0)) {
-                        connection->sendEvents(buffer, count, scratch);
+                    if ((connection != 0) && (strcmp(connection->getPkgName(), "context_engine") == 0)) {
+                        connection->sendEvents(window_buffer, list_size, scratch);
                     }
+                }
+
+
+                // see if there is any meaningful inference coming out of it
+                // -- change the value of inf
+                inf = inf;            
+
+                // this is just make sure the system server will boot up
+                if (!send) {
+                    ALOGD("send events to system_server");
+                    // send our events to clients...
+                    const SortedVector< wp<SensorEventConnection> > activeConnections(
+                            getActiveConnections());
+                    size_t numConnections = activeConnections.size();
+
+                    for (size_t i=0 ; i<numConnections ; i++) {
+                        sp<SensorEventConnection> connection(activeConnections[i].promote());
+                        if ((connection != 0) && (strcmp(connection->getPkgName(), "system_server") == 0)) {
+                            connection->sendEvents(buffer, count, scratch);
+                        }
+                    }
+                }
+            }
+        } else {
+            // send our events to clients...
+            const SortedVector< wp<SensorEventConnection> > activeConnections(
+                    getActiveConnections());
+            size_t numConnections = activeConnections.size();
+            for (size_t i=0 ; i<numConnections ; i++) {
+                sp<SensorEventConnection> connection(
+                        activeConnections[i].promote());
+                if (connection != 0) {
+                    connection->sendEvents(buffer, count, scratch);
                 }
             }
         }
