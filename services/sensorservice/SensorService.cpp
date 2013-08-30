@@ -331,8 +331,9 @@ bool SensorService::threadLoop()
         // do a sliding window, each time send one more buffer to the context engine
 
         // add the current buffer to the tail of the linked list
-        Node *node = (Node *)malloc(sizeof(Node));
-        memset(node->buffer, 0, 20 * sizeof(sensors_event_t));
+        Node *node = new Node();
+        ALOGD("after new node");
+        //memset(node->buffer, 0, 20 * sizeof(sensors_event_t));
         int i = 0;
         for (i = 0; i < count; i++) {
             ALOGD("copy buffer to the new node: #%d", i);
