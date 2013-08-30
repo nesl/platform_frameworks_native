@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <sys/types.h>
+#include <utils/Mutex.h>
 #include "PrivacyRules.h"
 #include <string>
 #include "frameworks/native/services/sensorservice/FirewallConfigMessages.pb.h"
@@ -41,6 +42,7 @@ private:
     void updateCounters(size_t count, size_t start_pos,
         size_t end_pos, uid_t uid, const char* pkgName, const int32_t sensorType);
 public:
+    mutable Mutex mLock;
     void initCounter();
     size_t transformData(uid_t uid, const char* pkgName, sensors_event_t* scratch,
             size_t count, PrivacyRules* mPrivacyRules);

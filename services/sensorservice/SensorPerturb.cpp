@@ -286,14 +286,18 @@ void SensorPerturb::suppressData(
 }
 
 bool SensorPerturb::WriteStringToFile(const char* filename, const std::string& data) {
-    std::fstream ofs(filename, std::ios::out | std::ios::binary);
-    if (!ofs) {
-        ALOGE("Failed to open file %s", filename);
-        return false;
-    }
+   
+    {
+        Mutex::Autolock _l(mLock);
+        std::fstream ofs(filename, std::ios::out | std::ios::binary);
+        if (!ofs) {
+            ALOGE("Failed to open file %s", filename);
+            return false;
+        }
 
-    ofs << data;
-    ofs.close();
+        ofs << data;
+        ofs.close();
+    }
 
     char mode[] = "0755";
     int i = strtol(mode, 0, 8);
