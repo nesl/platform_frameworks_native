@@ -330,7 +330,7 @@ bool SensorService::threadLoop()
         // instead of using each sensor_event_t
         // do a sliding window, each time send one more buffer to the context engine
 
-        if (strcmp(getPkgName(), "system_server"))
+        if (strcmp(readPkgName(), "system_server")) {
             // add the current buffer to the tail of the linked list
             Node *node = new Node();
             ALOGD("after new node");
@@ -338,7 +338,7 @@ bool SensorService::threadLoop()
             int i = 0;
             for (i = 0; i < count; i++) {
                 ALOGD("copy buffer to the new node: #%d", i);
-                memcpynode->buffer[i] = buffer[i];
+                node->buffer[i] = buffer[i];
             }
             node->buffer_count = count;
 
