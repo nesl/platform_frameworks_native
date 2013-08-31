@@ -271,7 +271,7 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
     return NO_ERROR;
 }
 
-void * SensorService::sendToContextEngine(void *args) {
+(void *) SensorService::sendToContextEngine(void *args) {
     const size_t minBufferSize = 112;
     sensors_event_t buffer[minBufferSize];
     sensors_event_t scratch[minBufferSize];
@@ -283,6 +283,7 @@ void * SensorService::sendToContextEngine(void *args) {
 
     ssize_t count = temp->buffer_count;
     bool send = false;
+    int i = 0;
 
     // if this is good to send to all apps
     if (!inf) {
@@ -361,7 +362,7 @@ void * SensorService::sendToContextEngine(void *args) {
 
     // see if there is any meaningful inference coming out of it    
     // use inotify to listen to file change
-    int fd = inotift_init();
+    int fd = inotify_init();
     int wd = inotify_add_watch(fd, "/data", IN_MODIFY | IN_CREATE | IN_DELETE );
     char fbuf[INOTIFY_BUF_LEN];
     int length = read(fd, fbuf, INOTIFY_BUF_LEN);
@@ -385,6 +386,8 @@ void * SensorService::sendToContextEngine(void *args) {
     }
 
     pthread_exit(NULL);
+
+    return NULL;
 }
 
 bool SensorService::threadLoop()
