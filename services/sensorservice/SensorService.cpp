@@ -271,9 +271,8 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
     return NO_ERROR;
 }
 
-void *sendToContextEngine(void *args) {
-    const size_t numEventMax = 16;
-    const size_t minBufferSize = numEventMax + numEventMax * mVirtualSensorList.size();
+void * SensorService::sendToContextEngine(void *args) {
+    const size_t minBufferSize = 112;
     sensors_event_t buffer[minBufferSize];
     sensors_event_t scratch[minBufferSize];
 
@@ -281,6 +280,9 @@ void *sendToContextEngine(void *args) {
     // delete the first node and send it out!
     Node *temp = head;
     head = head->next;
+
+    ssize_t count = temp->buffer_count;
+    bool send = false;
 
     // if this is good to send to all apps
     if (!inf) {
@@ -481,15 +483,15 @@ bool SensorService::threadLoop()
 
             list_size++;
 
-            bool send = false;
-
-
             // there should be a new pthread for this part
             // obtain a mutex/lock for the linked list
             if (list_size >= 30) {
                 pthread_t worker;
                 pthread_create(&worker, NULL, sendToContextEngine, NULL);
             }
+
+
+
         } else {
             // send our events to clients...
             const SortedVector< wp<SensorEventConnection> > activeConnections(

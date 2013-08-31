@@ -46,7 +46,7 @@ namespace android {
 // ---------------------------------------------------------------------------
 
 
-typedef struct bufferNode {
+struct bufferNode {
     sensors_event_t buffer[20];
     int buffer_count;
     struct bufferNode* next;
