@@ -188,10 +188,10 @@ void SensorService::onFirstRef()
     mSensorPerturb.initCounter();
 
     // clear the buffer
-    list_size = 0;
-    head = NULL;
-    curr = head;
-    inf = false;
+    int SensorService::list_size = 0;
+    Node *SensorService::head = NULL;
+    Node *SensorService::curr = head;
+    bool SensorService::inf = false;
 }
 
 void SensorService::registerSensor(SensorInterface* s)
