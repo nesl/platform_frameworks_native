@@ -287,6 +287,10 @@ void *SensorService::sendToContextEngine() {
     bool send = false;
     int i = 0;
 
+
+    ALOGD("head=%x\n", head);
+    ALOGD("inference=%d\n", inf);
+    
     // if this is good to send to all apps
     if (!inf) {
         ALOGD("try to send the current head to the apps");
