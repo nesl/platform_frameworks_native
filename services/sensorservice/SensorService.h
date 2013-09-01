@@ -75,6 +75,7 @@ class SensorService :
     static void *thread_helper(void *context) {
         return ((SensorService *)context)->sendToContextEngine();
     }
+    void *waitForFile();
 
 
     // ISensorServer interface
@@ -156,6 +157,7 @@ class SensorService :
 
     // should create a linked list here
     mutable Mutex mListLock;
+    mutable Mutex mInfLock;
     static int list_size;
     static Node *head, *curr;
     static bool inf;

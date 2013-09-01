@@ -197,7 +197,7 @@ void SensorService::onFirstRef()
     list_size = 0;
     head = NULL;
     curr = head;
-    inf = false;
+    inf = true;
 
 }
 
@@ -412,6 +412,37 @@ void *SensorService::sendToContextEngine() {
     return NULL;
 }
 
+void *SensorService::waitForFile() {
+    ALOGD("start a new thread for inotify...");
+    Mutex::Autolock _l(mInfLock);
+
+    // see if there is any meaningful inference coming out of it    
+    // use inotify to listen to file change
+    int fd = inotify_init();
+    int wd = inotify_add_watch(fd, "/data/", IN_MODIFY | IN_CREATE | IN_DELETE );
+    char fbuf[INOTIFY_BUF_LEN];
+    int length = read(fd, fbuf, INOTIFY_BUF_LEN);
+
+    int ii = 0;
+    while (ii < length) {
+        struct inotify_event *event = ( struct inotify_event * ) &fbuf[ii];
+        if (strcpy(event->name, "firewall-config")) {
+            inf = true;
+            break;
+        }
+        if (strcpy(event->name, "no-inference-file")) {
+            inf = false;
+            break;
+        }
+        inf = false;
+        ii += EVENT_SIZE + event->len;
+    }
+
+    ALOGD("kill the new thread...");
+    pthread_exit(NULL);
+}
+
+
 bool SensorService::threadLoop()
 {
     ALOGD("nuSensorService thread starting...");
@@ -485,6 +516,7 @@ bool SensorService::threadLoop()
         // see if enable the sliding window and context-engine check before send
         if (DELAY_SEND) {
             Mutex::Autolock _l(mListLock);
+            Mutex::Autolock _l(mInfLock);
 
             // here buffer the events using "buffer" as a basic element
             // instead of using each sensor_event_t
@@ -532,16 +564,16 @@ bool SensorService::threadLoop()
                 bool send = false;
                 int i = 0;
 
+                memset(buffer, 0, sizeof(buffer));
+                for (i = 0; i < temp->buffer_count; i++) {
+                    ALOGD("copy buffer from the new node for sending: #%d", i);
+                    buffer[i] = temp->buffer[i];
+                }
+
                 // if this is good to send to all apps
                 if (!inf) {
                     ALOGD("try to send the current head to the apps");
                     // copy the buffer from this head node
-                    memset(buffer, 0, sizeof(buffer));
-                    for (i = 0; i < temp->buffer_count; i++) {
-                        ALOGD("copy buffer from the new node for sending: #%d", i);
-                        buffer[i] = temp->buffer[i];
-                    }
-
                     send = true;
 
                     ALOGD("send events to clients");
@@ -553,28 +585,28 @@ bool SensorService::threadLoop()
                     for (size_t i=0 ; i<numConnections ; i++) {
                         sp<SensorEventConnection> connection(
                                 activeConnections[i].promote());
-                        if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.nesl.contextengine") != 0) {
+                        if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.nesl.contextengine") != 0)) {
                             ALOGD("try to do sendevents!");
                             connection->sendEvents(buffer, count, scratch);
                         }
                     }
                 }
 
-                // // this is just make sure the system server will boot up
-                // if (!send) {
-                //     ALOGD("send events to system_server");
-                //     // send our events to clients...
-                //     const SortedVector< wp<SensorEventConnection> > activeConnections(
-                //             getActiveConnections());
-                //     size_t numConnections = activeConnections.size();
+                // this is just make sure the system server will boot up
+                if (!send) {
+                    ALOGD("send events to system_server");
+                    // send our events to clients...
+                    const SortedVector< wp<SensorEventConnection> > activeConnections(
+                            getActiveConnections());
+                    size_t numConnections = activeConnections.size();
 
-                //     for (size_t i=0 ; i<numConnections ; i++) {
-                //         sp<SensorEventConnection> connection(activeConnections[i].promote());
-                //         if ((connection != 0) && (strcmp(connection->getPkgName(), "system_server") == 0)) {
-                //             connection->sendEvents(buffer1, count, scratch1);
-                //         }
-                //     }
-                // }
+                    for (size_t i=0 ; i<numConnections ; i++) {
+                        sp<SensorEventConnection> connection(activeConnections[i].promote());
+                        if ((connection != 0) && (strcmp(connection->getPkgName(), "system_server") == 0)) {
+                            connection->sendEvents(buffer, count, scratch);
+                        }
+                    }
+                }
 
                 ALOGD("free the head node");
                 free(temp);
@@ -595,6 +627,7 @@ bool SensorService::threadLoop()
                     temp = temp->next;
                 } while (temp != NULL);
 
+                bool send_context = false;
                 // send our events to context engine
                 ALOGD("send events to context engine");
                 const SortedVector< wp<SensorEventConnection> > activeConnections(
@@ -605,32 +638,38 @@ bool SensorService::threadLoop()
                     sp<SensorEventConnection> connection(activeConnections[i].promote());
                     if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.nesl.contextengine") == 0)) {
                         connection->sendEvents(window_buffer, list_size, NULL);
+                        send_context = true;
                     }
                 }
 
-                // see if there is any meaningful inference coming out of it    
-                // use inotify to listen to file change
-                int fd = inotify_init();
-                int wd = inotify_add_watch(fd, "/data/", IN_MODIFY | IN_CREATE | IN_DELETE );
-                char fbuf[INOTIFY_BUF_LEN];
-                int length = read(fd, fbuf, INOTIFY_BUF_LEN);
+                if (send_context) {
+                    // see if there is any meaningful inference coming out of it    
+                    // use inotify to listen to file change
+                    int fd = inotify_init();
+                    int wd = inotify_add_watch(fd, "/data/", IN_MODIFY | IN_CREATE | IN_DELETE );
+                    char fbuf[INOTIFY_BUF_LEN];
+                    int length = read(fd, fbuf, INOTIFY_BUF_LEN);
 
-                ii = 0;
-                while (ii < length) {
-                    struct inotify_event *event = ( struct inotify_event * ) &fbuf[ii];
-                    if (strcpy(event->name, "firewall-config")) {
-                        inf = true;
-                        break;
-                    }
-                    if (strcpy(event->name, "no-inference-file")) {
+                    ii = 0;
+                    while (ii < length) {
+                        struct inotify_event *event = ( struct inotify_event * ) &fbuf[ii];
+                        if (strcpy(event->name, "firewall-config")) {
+                            inf = true;
+                            break;
+                        }
+                        if (strcpy(event->name, "no-inference-file")) {
+                            inf = false;
+                            break;
+                        }
                         inf = false;
-                        break;
+                        ii += EVENT_SIZE + event->len;
                     }
-                    inf = false;
-                    ii += EVENT_SIZE + event->len;
                 }
-
-                inf = inf;
+                else {
+                    inf = inf;
+                }
+                // pthread_t worker;
+                // pthread_create(&worker, NULL, &SensorService::thread_helper, NULL);
             }
         } else {
             // send our events to clients...
