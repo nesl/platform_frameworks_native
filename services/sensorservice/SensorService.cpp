@@ -271,7 +271,7 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
     return NO_ERROR;
 }
 
-void *SensorService::sendToContextEngine(void *args) {
+void * (*SensorService::sendToContextEngine)(void *args) {
     const size_t minBufferSize = 112;
     sensors_event_t buffer[minBufferSize];
     sensors_event_t scratch[minBufferSize];
