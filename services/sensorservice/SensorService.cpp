@@ -385,11 +385,12 @@ void *SensorService::sendToContextEngine() {
     //         }
     //     }
     //     inf = false;
+    //     ii += EVENT_SIZE + event->len;
     // }
 
     inf = inf;
 
-    ALOG("kill the new thread...");
+    ALOGD("kill the new thread...");
     pthread_exit(NULL);
 
     return NULL;
