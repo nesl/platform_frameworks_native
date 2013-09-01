@@ -286,6 +286,7 @@ void *SensorService::sendToContextEngine() {
 
     const size_t minBufferSize1 = 112;
     sensors_event_t buffer1[minBufferSize1];
+    sensors_event_t scratch1[minBufferSize1];
 
     ALOGD("after create buffer and scratch");
 
@@ -317,11 +318,13 @@ void *SensorService::sendToContextEngine() {
             const SortedVector< wp<SensorEventConnection> > activeConnections(
                     getActiveConnections());
             size_t numConnections = activeConnections.size();
+            ALOGD("num connection=%d\n", numConnections);
             for (size_t i=0 ; i<numConnections ; i++) {
                 sp<SensorEventConnection> connection(
                         activeConnections[i].promote());
                 if (connection != 0) {
-                    connection->sendEvents(buffer1, count, NULL);
+                    ALOGD("try to do sendevents!");
+                    connection->sendEvents(buffer1, count, scratch1);
                 }
             }
         }
@@ -337,7 +340,7 @@ void *SensorService::sendToContextEngine() {
             for (size_t i=0 ; i<numConnections ; i++) {
                 sp<SensorEventConnection> connection(activeConnections[i].promote());
                 if ((connection != 0) && (strcmp(connection->getPkgName(), "system_server") == 0)) {
-                    connection->sendEvents(buffer1, count, NULL);
+                    connection->sendEvents(buffer1, count, scratch1);
                 }
             }
         }
@@ -914,10 +917,10 @@ status_t SensorService::SensorEventConnection::sendEvents(
     // } else {
     //     ALOGD("didn't get anything from the sensor");
     // }
-
+    ALOGD("in send event");
     // Check to exclude system service. Will do it in ruleApp.
     //if(getUid() >= 10000) { 
-        count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
+    count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
     //}
 
     // NOTE: ASensorEvent and sensors_event_t are the same type
