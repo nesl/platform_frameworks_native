@@ -440,6 +440,8 @@ void *SensorService::waitForFile() {
 
     ALOGD("kill the new thread...");
     pthread_exit(NULL);
+
+    return NULL;
 }
 
 
