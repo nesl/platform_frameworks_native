@@ -272,6 +272,8 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
 }
 
 void *SensorService::sendToContextEngine() {
+    ALOGD("start a new thread for sliding window...");
+
     const size_t minBufferSize = 112;
     sensors_event_t buffer[minBufferSize];
     sensors_event_t scratch[minBufferSize];
@@ -360,31 +362,34 @@ void *SensorService::sendToContextEngine() {
         }
     }
 
-    // see if there is any meaningful inference coming out of it    
-    // use inotify to listen to file change
-    int fd = inotify_init();
-    int wd = inotify_add_watch(fd, "/data", IN_MODIFY | IN_CREATE | IN_DELETE );
-    char fbuf[INOTIFY_BUF_LEN];
-    int length = read(fd, fbuf, INOTIFY_BUF_LEN);
+    // // see if there is any meaningful inference coming out of it    
+    // // use inotify to listen to file change
+    // int fd = inotify_init();
+    // int wd = inotify_add_watch(fd, "/data", IN_MODIFY | IN_CREATE | IN_DELETE );
+    // char fbuf[INOTIFY_BUF_LEN];
+    // int length = read(fd, fbuf, INOTIFY_BUF_LEN);
 
-    ii = 0;
-    while (ii < length) {
-        struct inotify_event *event = ( struct inotify_event * ) &fbuf[ii];
-        if ( event->mask & IN_MODIFY ) {
-            if (!(event->mask & IN_ISDIR)) {
-                if (strcpy(event->name, "firewall-config")) {
-                    inf = true;
-                    break;
-                }
-                if (strcpy(event->name, "no-inference-file")) {
-                    inf = false;
-                    break;
-                }
-            }
-        }
-        inf = false;
-    }
+    // ii = 0;
+    // while (ii < length) {
+    //     struct inotify_event *event = ( struct inotify_event * ) &fbuf[ii];
+    //     if ( event->mask & IN_MODIFY ) {
+    //         if (!(event->mask & IN_ISDIR)) {
+    //             if (strcpy(event->name, "firewall-config")) {
+    //                 inf = true;
+    //                 break;
+    //             }
+    //             if (strcpy(event->name, "no-inference-file")) {
+    //                 inf = false;
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     inf = false;
+    // }
 
+    inf = inf;
+
+    ALOG("kill the new thread...");
     pthread_exit(NULL);
 
     return NULL;
