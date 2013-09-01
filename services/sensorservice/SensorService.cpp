@@ -280,14 +280,12 @@ void *SensorService::sendToContextEngine() {
 
     // reach the limit of the list
     // delete the first node and send it out!
-    if (head != NULL) {
-
-    }
 
     Node *temp = head;
-    head = head->next;
+    printf("head==null: %d\n", (head==NULL));
 
     if (temp != NULL) {
+        head = head->next;
         ssize_t count = temp->buffer_count;
         bool send = false;
         int i = 0;
