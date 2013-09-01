@@ -329,21 +329,21 @@ void *SensorService::sendToContextEngine() {
             }
         }
 
-        // this is just make sure the system server will boot up
-        if (!send) {
-            ALOGD("send events to system_server");
-            // send our events to clients...
-            const SortedVector< wp<SensorEventConnection> > activeConnections(
-                    getActiveConnections());
-            size_t numConnections = activeConnections.size();
+        // // this is just make sure the system server will boot up
+        // if (!send) {
+        //     ALOGD("send events to system_server");
+        //     // send our events to clients...
+        //     const SortedVector< wp<SensorEventConnection> > activeConnections(
+        //             getActiveConnections());
+        //     size_t numConnections = activeConnections.size();
 
-            for (size_t i=0 ; i<numConnections ; i++) {
-                sp<SensorEventConnection> connection(activeConnections[i].promote());
-                if ((connection != 0) && (strcmp(connection->getPkgName(), "system_server") == 0)) {
-                    connection->sendEvents(buffer1, count, scratch1);
-                }
-            }
-        }
+        //     for (size_t i=0 ; i<numConnections ; i++) {
+        //         sp<SensorEventConnection> connection(activeConnections[i].promote());
+        //         if ((connection != 0) && (strcmp(connection->getPkgName(), "system_server") == 0)) {
+        //             connection->sendEvents(buffer1, count, scratch1);
+        //         }
+        //     }
+        // }
 
         ALOGD("free the head node");
         free(temp);
