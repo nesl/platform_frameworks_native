@@ -74,6 +74,12 @@ using namespace android_sensorfirewall;
 namespace android {
 // ---------------------------------------------------------------------------
 
+// clear the buffer
+int SensorService::list_size = 0;
+Node *SensorService::head = NULL;
+Node *SensorService::curr = head;
+bool SensorService::inf = false;
+
 /*
  * Notes:
  *
@@ -188,10 +194,11 @@ void SensorService::onFirstRef()
     mSensorPerturb.initCounter();
 
     // clear the buffer
-    int SensorService::list_size = 0;
-    Node *SensorService::head = NULL;
-    Node *SensorService::curr = head;
-    bool SensorService::inf = false;
+    list_size = 0;
+    head = NULL;
+    curr = head;
+    inf = false;
+
 }
 
 void SensorService::registerSensor(SensorInterface* s)
