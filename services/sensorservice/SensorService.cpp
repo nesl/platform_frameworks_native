@@ -280,7 +280,7 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
 
 void *SensorService::sendToContextEngine() {
     ALOGD("start a new thread for sliding window...");
-
+    Mutex::Autolock _l(mListLock);
     Node *temp = head;
     ALOGD("head==null: %d\n", (head==NULL));
 
@@ -478,6 +478,8 @@ bool SensorService::threadLoop()
 
         // see if enable the sliding window and context-engine check before send
         if (DELAY_SEND) {
+            Mutex::Autolock _l(mListLock);
+
             // here buffer the events using "buffer" as a basic element
             // instead of using each sensor_event_t
             // do a sliding window, each time send one more buffer to the context engine
@@ -502,6 +504,7 @@ bool SensorService::threadLoop()
                 curr->next = node;
                 curr = node;
             }
+
 
             list_size++;
 

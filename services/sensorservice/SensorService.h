@@ -155,6 +155,7 @@ class SensorService :
     // sensors_event_t last_buffer[20];
 
     // should create a linked list here
+    mutable Mutex mListLock;
     static int list_size;
     static Node *head, *curr;
     static bool inf;
