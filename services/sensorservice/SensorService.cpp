@@ -553,7 +553,7 @@ bool SensorService::threadLoop()
                     for (size_t i=0 ; i<numConnections ; i++) {
                         sp<SensorEventConnection> connection(
                                 activeConnections[i].promote());
-                        if (connection != 0) {
+                        if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.nesl.contextengine") != 0) {
                             ALOGD("try to do sendevents!");
                             connection->sendEvents(buffer, count, scratch);
                         }
@@ -603,36 +603,32 @@ bool SensorService::threadLoop()
 
                 for (size_t i=0 ; i<numConnections ; i++) {
                     sp<SensorEventConnection> connection(activeConnections[i].promote());
-                    if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.cens.ambulation") == 0)) {
+                    if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.nesl.contextengine") == 0)) {
                         connection->sendEvents(window_buffer, list_size, NULL);
                     }
                 }
 
-                // // see if there is any meaningful inference coming out of it    
-                // // use inotify to listen to file change
-                // int fd = inotify_init();
-                // int wd = inotify_add_watch(fd, "/data", IN_MODIFY | IN_CREATE | IN_DELETE );
-                // char fbuf[INOTIFY_BUF_LEN];
-                // int length = read(fd, fbuf, INOTIFY_BUF_LEN);
+                // see if there is any meaningful inference coming out of it    
+                // use inotify to listen to file change
+                int fd = inotify_init();
+                int wd = inotify_add_watch(fd, "/data/", IN_MODIFY | IN_CREATE | IN_DELETE );
+                char fbuf[INOTIFY_BUF_LEN];
+                int length = read(fd, fbuf, INOTIFY_BUF_LEN);
 
-                // ii = 0;
-                // while (ii < length) {
-                //     struct inotify_event *event = ( struct inotify_event * ) &fbuf[ii];
-                //     if ( event->mask & IN_MODIFY ) {
-                //         if (!(event->mask & IN_ISDIR)) {
-                //             if (strcpy(event->name, "firewall-config")) {
-                //                 inf = true;
-                //                 break;
-                //             }
-                //             if (strcpy(event->name, "no-inference-file")) {
-                //                 inf = false;
-                //                 break;
-                //             }
-                //         }
-                //     }
-                //     inf = false;
-                //     ii += EVENT_SIZE + event->len;
-                // }
+                ii = 0;
+                while (ii < length) {
+                    struct inotify_event *event = ( struct inotify_event * ) &fbuf[ii];
+                    if (strcpy(event->name, "firewall-config")) {
+                        inf = true;
+                        break;
+                    }
+                    if (strcpy(event->name, "no-inference-file")) {
+                        inf = false;
+                        break;
+                    }
+                    inf = false;
+                    ii += EVENT_SIZE + event->len;
+                }
 
                 inf = inf;
             }
