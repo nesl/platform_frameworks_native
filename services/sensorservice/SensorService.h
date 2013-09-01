@@ -71,7 +71,11 @@ class SensorService :
     // Thread interface
     virtual bool threadLoop();
 
-    void * (*sendToContextEngine)(void *args);
+    void *sendToContextEngine();
+    static void *thread_helper(void *context) {
+        return ((SensorService *)context)->sendToContextEngine();
+    }
+
 
     // ISensorServer interface
     virtual Vector<Sensor> getSensorList();
