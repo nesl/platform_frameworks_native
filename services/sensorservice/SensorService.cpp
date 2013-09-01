@@ -515,8 +515,8 @@ bool SensorService::threadLoop()
 
         // see if enable the sliding window and context-engine check before send
         if (DELAY_SEND) {
-            Mutex::Autolock _l(mListLock);
-            Mutex::Autolock _l(mInfLock);
+            // Mutex::Autolock _l(mListLock);
+            // Mutex::Autolock _l(mInfLock);
 
             // here buffer the events using "buffer" as a basic element
             // instead of using each sensor_event_t
