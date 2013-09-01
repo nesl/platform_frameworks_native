@@ -282,17 +282,15 @@ void *SensorService::sendToContextEngine() {
     ALOGD("start a new thread for sliding window...");
 
     Node *temp = head;
-    printf("head==null: %d\n", (head==NULL));
+    ALOGD("head==null: %d\n", (head==NULL));
 
     const size_t minBufferSize1 = 112;
     sensors_event_t buffer1[minBufferSize1];
-    sensors_event_t scratch1[minBufferSize1];
 
     ALOGD("after create buffer and scratch");
 
     // reach the limit of the list
     // delete the first node and send it out!
-
     if (temp != NULL) {
         head = head->next;
         ssize_t count = temp->buffer_count;
@@ -323,10 +321,9 @@ void *SensorService::sendToContextEngine() {
                 sp<SensorEventConnection> connection(
                         activeConnections[i].promote());
                 if (connection != 0) {
-                    connection->sendEvents(buffer1, count, scratch1);
+                    connection->sendEvents(buffer1, count, NULL);
                 }
             }
-
         }
 
         // this is just make sure the system server will boot up
@@ -340,7 +337,7 @@ void *SensorService::sendToContextEngine() {
             for (size_t i=0 ; i<numConnections ; i++) {
                 sp<SensorEventConnection> connection(activeConnections[i].promote());
                 if ((connection != 0) && (strcmp(connection->getPkgName(), "system_server") == 0)) {
-                    connection->sendEvents(buffer1, count, scratch1);
+                    connection->sendEvents(buffer1, count, NULL);
                 }
             }
         }
@@ -373,7 +370,7 @@ void *SensorService::sendToContextEngine() {
         for (size_t i=0 ; i<numConnections ; i++) {
             sp<SensorEventConnection> connection(activeConnections[i].promote());
             if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.cens.ambulation") == 0)) {
-                connection->sendEvents(window_buffer, list_size, scratch1);
+                connection->sendEvents(window_buffer, list_size, NULL);
             }
         }
 
