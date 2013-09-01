@@ -271,7 +271,7 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
     return NO_ERROR;
 }
 
-(void *) SensorService::sendToContextEngine(void *args) {
+void *SensorService::sendToContextEngine(void *args) {
     const size_t minBufferSize = 112;
     sensors_event_t buffer[minBufferSize];
     sensors_event_t scratch[minBufferSize];
@@ -490,11 +490,8 @@ bool SensorService::threadLoop()
             // obtain a mutex/lock for the linked list
             if (list_size >= 30) {
                 pthread_t worker;
-                pthread_create(&worker, NULL, sendToContextEngine, NULL);
+                pthread_create(&worker, NULL, SensorService::sendToContextEngine, NULL);
             }
-
-
-
         } else {
             // send our events to clients...
             const SortedVector< wp<SensorEventConnection> > activeConnections(
