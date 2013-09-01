@@ -274,22 +274,23 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
 void *SensorService::sendToContextEngine() {
     ALOGD("start a new thread for sliding window...");
 
-    const size_t minBufferSize = 112;
-    sensors_event_t buffer[minBufferSize];
-    sensors_event_t scratch[minBufferSize];
+    Node *temp = head;
+    printf("head==null: %d\n", (head==NULL));
+
+    const size_t minBufferSize1 = 112;
+    sensors_event_t buffer1[minBufferSize1];
+    sensors_event_t scratch1[minBufferSize1];
+
+    ALOGD("after create buffer and scratch");
 
     // reach the limit of the list
     // delete the first node and send it out!
-
-    Node *temp = head;
-    printf("head==null: %d\n", (head==NULL));
 
     if (temp != NULL) {
         head = head->next;
         ssize_t count = temp->buffer_count;
         bool send = false;
         int i = 0;
-
 
         ALOGD("head=%x\n", head);
         ALOGD("inference=%d\n", inf);
@@ -298,10 +299,10 @@ void *SensorService::sendToContextEngine() {
         if (!inf) {
             ALOGD("try to send the current head to the apps");
             // copy the buffer from this head node
-            memset(buffer, 0, sizeof(buffer));
+            memset(buffer1, 0, sizeof(buffer1));
             for (i = 0; i < temp->buffer_count; i++) {
                 ALOGD("copy buffer from the new node for sending: #%d", i);
-                buffer[i] = temp->buffer[i];
+                buffer1[i] = temp->buffer[i];
             }
 
             send = true;
@@ -315,7 +316,7 @@ void *SensorService::sendToContextEngine() {
                 sp<SensorEventConnection> connection(
                         activeConnections[i].promote());
                 if (connection != 0) {
-                    connection->sendEvents(buffer, count, scratch);
+                    connection->sendEvents(buffer1, count, scratch1);
                 }
             }
 
@@ -332,7 +333,7 @@ void *SensorService::sendToContextEngine() {
             for (size_t i=0 ; i<numConnections ; i++) {
                 sp<SensorEventConnection> connection(activeConnections[i].promote());
                 if ((connection != 0) && (strcmp(connection->getPkgName(), "system_server") == 0)) {
-                    connection->sendEvents(buffer, count, scratch);
+                    connection->sendEvents(buffer1, count, scratch1);
                 }
             }
         }
@@ -365,7 +366,7 @@ void *SensorService::sendToContextEngine() {
         for (size_t i=0 ; i<numConnections ; i++) {
             sp<SensorEventConnection> connection(activeConnections[i].promote());
             if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.cens.ambulation") == 0)) {
-                connection->sendEvents(window_buffer, list_size, scratch);
+                connection->sendEvents(window_buffer, list_size, scratch1);
             }
         }
 

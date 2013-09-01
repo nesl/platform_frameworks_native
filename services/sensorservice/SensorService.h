@@ -155,10 +155,10 @@ class SensorService :
     // sensors_event_t last_buffer[20];
 
     // should create a linked list here
-    int list_size;
-    Node *head, *curr;
-    bool inf;
-    int buffer_count;
+    static int list_size;
+    static Node *head, *curr;
+    static bool inf;
+    static int buffer_count;
 
 public:
     static char const* getServiceName() { return "sensorservice"; }
