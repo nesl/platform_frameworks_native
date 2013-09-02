@@ -666,6 +666,8 @@ bool SensorService::threadLoop()
                         inf = false;
                         ii += EVENT_SIZE + event->len;
                     }
+                    ( void ) inotify_rm_watch( fd, wd );
+                    ( void ) close( fd );
                 }
                 else {
                     inf = inf;
