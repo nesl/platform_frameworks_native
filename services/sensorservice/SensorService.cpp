@@ -587,7 +587,7 @@ bool SensorService::threadLoop()
                     for (size_t i=0 ; i<numConnections ; i++) {
                         sp<SensorEventConnection> connection(
                                 activeConnections[i].promote());
-                        if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.nesl.contextengine") != 0)) {
+                        if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.nesl.firewall.contextengine") != 0)) {
                             ALOGD("try to do sendevents!");
                             connection->sendEvents(buffer, count, scratch);
                         }
@@ -638,7 +638,7 @@ bool SensorService::threadLoop()
 
                 for (size_t i=0 ; i<numConnections ; i++) {
                     sp<SensorEventConnection> connection(activeConnections[i].promote());
-                    if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.nesl.contextengine") == 0)) {
+                    if ((connection != 0) && (strcmp(connection->getPkgName(), "edu.ucla.nesl.firewall.contextengine") == 0)) {
                         connection->sendEvents(window_buffer, list_size, NULL);
                         send_context = true;
                     }
