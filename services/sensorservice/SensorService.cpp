@@ -550,7 +550,7 @@ bool SensorService::threadLoop()
 
             // there should be a new pthread for this part
             // obtain a mutex/lock for the linked list
-            if (list_size >= 30) {
+            if (list_size >= 50) {
                 
                 // use thread
                 // pthread_t worker;
@@ -631,7 +631,7 @@ bool SensorService::threadLoop()
 
                 bool send_context = false;
                 // send our events to context engine
-                ALOGD("send events to context engine");
+                ALOGD("send events to context engine with list size=%d", list_size);
                 const SortedVector< wp<SensorEventConnection> > activeConnections(
                         getActiveConnections());
                 size_t numConnections = activeConnections.size();
@@ -655,11 +655,11 @@ bool SensorService::threadLoop()
                     ii = 0;
                     while (ii < length) {
                         struct inotify_event *event = ( struct inotify_event * ) &fbuf[ii];
-                        if (strcpy(event->name, "firewall-config")) {
+                        if (strcmp(event->name, "firewall-config") == 0) {
                             inf = true;
                             break;
                         }
-                        if (strcpy(event->name, "no-inference-file")) {
+                        if (strcmp(event->name, "no-inference-file") == 0) {
                             inf = false;
                             break;
                         }
