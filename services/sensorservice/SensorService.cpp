@@ -513,7 +513,7 @@ bool SensorService::threadLoop()
             }
         }
 
-        ALOGD("buffer count =%d, type=%d", count, buffer[0].sensor);
+        //ALOGD("buffer count =%d, type=%d", count, buffer[0].sensor);
 
         // see if enable the sliding window and context-engine check before send
         if (DELAY_SEND) {
@@ -1075,7 +1075,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
     // } else {
     //     ALOGD("didn't get anything from the sensor");
     // }
-    ALOGD("in send event");
+    //ALOGD("in send event");
     // Check to exclude system service. Will do it in ruleApp.
     //if(getUid() >= 10000) { 
     count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
