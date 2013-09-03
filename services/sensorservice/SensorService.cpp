@@ -64,7 +64,7 @@
 #include "frameworks/native/services/sensorservice/SensorCountMessages.pb.h"
 
 // if enable the sliding window and context-engine check before send
-#define DELAY_SEND true
+#define DELAY_SEND false
 
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )
 #define INOTIFY_BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
