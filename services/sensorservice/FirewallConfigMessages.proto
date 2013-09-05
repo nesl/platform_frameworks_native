@@ -27,6 +27,10 @@ message VectorValue {
     optional float z = 3; // z-axis value
     optional float theta = 4; // for type-rotation
     optional float accuracy = 5; // for type-rotation
+    optional double lat = 6; // gps latitude
+    optional double lon = 7; // gps longitude
+    optional float speed = 8; // gps speed
+    optional float bearing = 9; // gps bearing
 }
 
 message SensorValue {
