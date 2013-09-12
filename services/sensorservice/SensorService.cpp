@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <string>
 #include <sys/types.h>
+#include <sys/time.h>
 
 #include <cutils/properties.h>
 
@@ -413,16 +414,22 @@ void SensorService::reloadConfig()
     //TODO(krr): Only the root (uid=0) should be able to invoke this.
     ALOGD("========   SensorService::reloadConfig   ========");
 
+    struct timeval tv, tv1;
     FirewallConfig firewallConfig;
+
+    gettimeofday(&tv, NULL);
     if (!ReadFirewallConfig(&firewallConfig)) {
       ALOGE("Failed to load firewall config.");
       return;
     }
-
-    PrintFirewallConfig(firewallConfig);
-    ALOGD("========   reloadConfig DONE   ========");
-
     ParseFirewallConfigToHashTable(&firewallConfig, mPrivacyRules);
+    gettimeofday(&tv1, NULL);
+
+    double elapsed = (tv1.tv_sec - tv.tv_sec) + (tv1.tv_usec - tv.tv_usec) / 1000000.0;
+    ALOGD("elapsed time to load config=%lf", elapsed);
+
+    //PrintFirewallConfig(firewallConfig);
+    ALOGD("========   reloadConfig DONE   ========");
     
     //Testing HashTable
     /*
