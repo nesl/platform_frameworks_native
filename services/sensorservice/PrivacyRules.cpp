@@ -32,11 +32,11 @@ namespace android {
         firewallConfigTable::iterator mIter;
         mIter = rulesTbl->find(*toSearchKey);
         if(mIter == rulesTbl->end()) {
-            ALOGD("No Match Found");
+            //ALOGD("No Match Found");
             return NULL;
         }
         else {
-            ALOGD("Match Found");
+            //ALOGD("Match Found");
             return &mIter->second;
         }
     }
