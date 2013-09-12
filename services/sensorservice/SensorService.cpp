@@ -430,6 +430,7 @@ void SensorService::reloadConfig()
 
     //PrintFirewallConfig(firewallConfig);
     ALOGD("========   reloadConfig DONE   ========");
+    ALOGD("Rule size=%d", mPrivacyRules->getConfigLength());
     
     //Testing HashTable
     /*

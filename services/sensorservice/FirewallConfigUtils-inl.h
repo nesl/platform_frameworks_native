@@ -106,7 +106,7 @@ void ParseFirewallConfigToHashTable(const FirewallConfig* firewallConfig, androi
         temp->CopyFrom(rule);
         mPrivacyRules->addRule(key, temp);
     }
-    ALOGD("============= All Rules Added =============");
+    //ALOGD("============= All Rules Added =============");
 }
 
 // ---------------------------------------------------------------------------
