@@ -428,7 +428,7 @@ void SensorService::reloadConfig()
     double elapsed = (tv1.tv_sec - tv.tv_sec) + (tv1.tv_usec - tv.tv_usec) / 1000000.0;
     ALOGD("elapsed time to load config=%lf", elapsed);
 
-    //PrintFirewallConfig(firewallConfig);
+    PrintFirewallConfig(firewallConfig);
     ALOGD("========   reloadConfig DONE   ========");
     ALOGD("Rule size=%d", mPrivacyRules->getConfigLength());
     

@@ -22,21 +22,21 @@ namespace android {
     }
     
     void PrivacyRules::addRule(const ruleKey_t* key, const Rule* value) {
-        //ALOGD("Inserting ruleName = %s\n", value->rulename().c_str());
+        ALOGD("Inserting ruleName = %s\n", value->rulename().c_str());
         rulesTbl->insert(std::make_pair(*key, *value));
         configLength = rulesTbl->size();
-        //ALOGD("Number of entries in the table = %d\n", configLength);
+        ALOGD("Number of entries in the table = %d\n", configLength);
     }
 
     const Rule* PrivacyRules::findRule(const ruleKey_t* toSearchKey) {
         firewallConfigTable::iterator mIter;
         mIter = rulesTbl->find(*toSearchKey);
         if(mIter == rulesTbl->end()) {
-            //ALOGD("No Match Found");
+            ALOGD("No Match Found");
             return NULL;
         }
         else {
-            //ALOGD("Match Found");
+            ALOGD("Match Found");
             return &mIter->second;
         }
     }
@@ -52,7 +52,7 @@ namespace android {
         if(rule) {
                 const Action* action = &rule->action();
                 if(action) {
-                    //ALOGD("ruleName = %s, sensorType = %d, pkgName = %s, pkgUid = %d, action=%d\n", rule->rulename().c_str(), rule->sensortype(), rule->pkgname().c_str(), rule->pkguid(), action->actiontype());
+                    ALOGD("ruleName = %s, sensorType = %d, pkgName = %s, pkgUid = %d, action=%d\n", rule->rulename().c_str(), rule->sensortype(), rule->pkgname().c_str(), rule->pkguid(), action->actiontype());
                 }
                 else {
                     ALOGE("Malformed Rule: action is not set");
