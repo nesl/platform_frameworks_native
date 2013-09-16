@@ -411,11 +411,11 @@ size_t SensorPerturb::transformData(
                         i = start_pos;
                         count = count - (end_pos - start_pos + 1);
                         toUpdateCounter = false;
-                        ALOGD("Suppressing Data");
+                        //ALOGD("Suppressing Data");
                         break;
                     case Action::ACTION_CONSTANT: 
                         SensorPerturb::constantData(scratch, start_pos, end_pos, sensorType, param);
-                        ALOGD("Constant Data");
+                        //ALOGD("Constant Data");
                         break;
                     case Action::ACTION_DELAY:
                         ALOGD("Delay Data");
@@ -425,10 +425,10 @@ size_t SensorPerturb::transformData(
                         ALOGD("Perturb Data");
                         break;
                     case Action::ACTION_PASSTHROUGH:
-                        ALOGD("No changes applied");
+                        //ALOGD("No changes applied");
                         break;
                     default:
-                        ALOGD("No Changes applied");
+                        //ALOGD("No Changes applied");
                 }
             }
         }
