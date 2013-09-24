@@ -425,10 +425,10 @@ size_t SensorPerturb::transformData(
                         ALOGD("Perturb Data");
                         break;
                     case Action::ACTION_PASSTHROUGH:
-                        //ALOGD("No changes applied");
+                        ALOGD("No changes applied");
                         break;
                     default:
-                        //ALOGD("No Changes applied");
+                        ALOGD("No Changes applied");
                 }
             }
         }
