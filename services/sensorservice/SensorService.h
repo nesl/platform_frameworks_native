@@ -85,6 +85,10 @@ class SensorService :
         // protected by SensorService::mLock
         SortedVector<int> mSensorInfo;
 
+        double total_time;
+        double last_time;
+        int count_perturb;
+
     public:
         SensorEventConnection(const sp<SensorService>& service, uid_t uid);
 

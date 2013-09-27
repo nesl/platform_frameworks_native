@@ -175,6 +175,9 @@ void SensorService::onFirstRef()
 
     // init counter in SensorPerturb
     mSensorPerturb.initCounter();
+    total_time = 0;
+    last_time = 0;
+    count_perturb = 0;
 
 }
 
@@ -688,10 +691,20 @@ bool SensorService::SensorEventConnection::hasAnySensor() const {
     return mSensorInfo.size() ? true : false;
 }
 
+
+double get_time()
+{
+   struct timeval t;
+   struct timezone tzp;
+   gettimeofday(&t, &tzp);
+   return t.tv_sec + t.tv_usec*1e-6;
+}
+
 status_t SensorService::SensorEventConnection::sendEvents(
         sensors_event_t const* buffer, size_t numEvents,
         sensors_event_t* scratch)
 {
+    double time_now = getTime();
     // filter out events not for this connection
     size_t count = 0;
 
@@ -712,9 +725,12 @@ status_t SensorService::SensorEventConnection::sendEvents(
         scratch = const_cast<sensors_event_t *>(buffer);
         count = numEvents;
     }
+
+
     // Check to exclude system service. Will do it in ruleApp.
     //if(getUid() >= 10000) { 
-        count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
+    count_perturb++;
+    count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
     //}
 
     // NOTE: ASensorEvent and sensors_event_t are the same type
@@ -725,6 +741,12 @@ status_t SensorService::SensorEventConnection::sendEvents(
         // full. For now, we just drop the events on the floor.
         //ALOGW("dropping %d events on the floor", count);
         return size;
+    }
+
+    double time_after = getTime();
+    total_time += (time_after - time_now);
+    if (count_perturb % 100 == 0) {
+        ALOGD("count=%d, avg time=%lf", count_perturb, (total_time / count_perturb));
     }
     return size < 0 ? status_t(size) : status_t(NO_ERROR);
 }
