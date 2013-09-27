@@ -22,6 +22,7 @@
 #include <string>
 #include <sys/types.h>
 #include <sys/time.h>
+ #include <time.h>
 
 #include <cutils/properties.h>
 
@@ -734,7 +735,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
     // Check to exclude system service. Will do it in ruleApp.
     //if(getUid() >= 10000) { 
     count_perturb++;
-    count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
+    //count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
     //}
 
     // NOTE: ASensorEvent and sensors_event_t are the same type
