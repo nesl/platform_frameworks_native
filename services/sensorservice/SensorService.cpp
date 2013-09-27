@@ -692,7 +692,7 @@ bool SensorService::SensorEventConnection::hasAnySensor() const {
 }
 
 
-double get_time()
+double getTime()
 {
    struct timeval t;
    struct timezone tzp;
