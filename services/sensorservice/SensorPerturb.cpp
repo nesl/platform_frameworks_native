@@ -418,17 +418,18 @@ size_t SensorPerturb::transformData(
                         //ALOGD("Constant Data");
                         break;
                     case Action::ACTION_DELAY:
-                        ALOGD("Delay Data");
+                        //ALOGD("Delay Data");
                         break;
                     case Action::ACTION_PERTURB:
                         SensorPerturb::perturbData(scratch, start_pos, end_pos, sensorType, param);
-                        ALOGD("Perturb Data");
+                        //ALOGD("Perturb Data");
                         break;
                     case Action::ACTION_PASSTHROUGH:
-                        ALOGD("No changes applied");
+                        //ALOGD("No changes applied");
                         break;
                     default:
-                        ALOGD("No Changes applied");
+                        break;
+                        //ALOGD("No Changes applied");
                 }
             }
         }
