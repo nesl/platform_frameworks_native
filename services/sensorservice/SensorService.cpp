@@ -72,9 +72,9 @@ namespace android {
  *
  */
 
-static double SensorService::total_time;
-static double SensorService::last_time;
-static int SensorService::count_perturb;
+double SensorService::total_time;
+double SensorService::last_time;
+int SensorService::count_perturb;
 
 SensorService::SensorService()
     : mInitCheck(NO_INIT)
