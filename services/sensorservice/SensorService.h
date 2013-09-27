@@ -142,9 +142,9 @@ public:
     status_t enable(const sp<SensorEventConnection>& connection, int handle);
     status_t disable(const sp<SensorEventConnection>& connection, int handle);
     status_t setEventRate(const sp<SensorEventConnection>& connection, int handle, nsecs_t ns);
-    double total_time;
-    double last_time;
-    int count_perturb;
+    static double total_time;
+    static double last_time;
+    static int count_perturb;
 };
 
 // ---------------------------------------------------------------------------
