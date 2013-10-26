@@ -48,7 +48,11 @@ public:
     virtual status_t    run(    const char* name = 0,
                                 int32_t priority = PRIORITY_DEFAULT,
                                 size_t stack = 0);
-    
+
+    virtual status_t    run_pb(const char* name = 0,
+                                int32_t priority = PRIORITY_DEFAULT,
+                                size_t stack = 0);
+
     // Ask this object's thread to exit. This function is asynchronous, when the
     // function returns the thread might still be running. Of course, this
     // function can be called from a different thread.
@@ -56,7 +60,7 @@ public:
 
     // Good place to do one-time initializations
     virtual status_t    readyToRun();
-    
+
     // Call requestExit() and wait until this object's thread exits.
     // BE VERY CAREFUL of deadlocks. In particular, it would be silly to call
     // this function from this object's thread. Will return WOULD_BLOCK in
@@ -76,7 +80,7 @@ public:
 protected:
     // exitPending() returns true if requestExit() has been called.
             bool        exitPending() const;
-    
+
 private:
     // Derived class must implement threadLoop(). The thread starts its life
     // here. There are two ways of using the Thread object:
@@ -84,7 +88,7 @@ private:
     //          requestExit() wasn't called.
     // 2) once: if threadLoop() returns false, the thread will exit upon return.
     virtual bool        threadLoop() = 0;
-
+    virtual bool        threadLoop_pb();
 private:
     Thread& operator=(const Thread&);
     static  int             _threadLoop(void* user);
@@ -94,10 +98,17 @@ private:
     mutable Mutex           mLock;
             Condition       mThreadExitedCondition;
             status_t        mStatus;
+            status_t        mstatus_pb;
+
     // note that all accesses of mExitPending and mRunning need to hold mLock
     volatile bool           mExitPending;
     volatile bool           mRunning;
             sp<Thread>      mHoldSelf;
+    // playback variables
+    volatile bool           mRunning_pb;
+    thread_id_t             mThread_pb;
+    mutable Mutex           mLock_pb;
+    static  int             _threadLoop_pb(void* user);
 #ifdef HAVE_ANDROID_OS
     // legacy for debugging, not used by getTid() as it is set by the child thread
     // and so is not initialized until the child reaches that point

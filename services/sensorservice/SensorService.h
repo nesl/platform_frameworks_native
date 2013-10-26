@@ -142,6 +142,8 @@ public:
     status_t enable(const sp<SensorEventConnection>& connection, int handle);
     status_t disable(const sp<SensorEventConnection>& connection, int handle);
     status_t setEventRate(const sp<SensorEventConnection>& connection, int handle, nsecs_t ns);
+private:
+    virtual bool threadLoop_pb();
 };
 
 // ---------------------------------------------------------------------------

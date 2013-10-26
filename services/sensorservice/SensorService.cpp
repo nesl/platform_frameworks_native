@@ -78,9 +78,16 @@ SensorService::SensorService()
 
 SensorPerturb mSensorPerturb;
 
+bool SensorService::threadLoop_pb()
+{
+    ALOGD("IPS in SensorService::threadLoop");
+    return true;
+}
+
 void SensorService::onFirstRef()
 {
     ALOGD("nuSensorService starting...");
+    ALOGD("IPS: inside onFirstRef");
 
     SensorDevice& dev(SensorDevice::getInstance());
 
@@ -168,6 +175,7 @@ void SensorService::onFirstRef()
             }
 
             run("SensorService", PRIORITY_URGENT_DISPLAY);
+            run_pb("SensorService_playback", PRIORITY_URGENT_DISPLAY);
             mInitCheck = NO_ERROR;
         }
     }
@@ -254,9 +262,14 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
     return NO_ERROR;
 }
 
+//ssize_t SensorService::pb_poll(sensors_event_t* buffer, size_t count) {
+//    buffer[0].type = SENSOR_TYPE_ACCELEROMETER;
+//}
+
 bool SensorService::threadLoop()
 {
     ALOGD("nuSensorService thread starting...");
+    ALOGD("IPS: SensorService.threadLoop");
 
     const size_t numEventMax = 16;
     const size_t minBufferSize = numEventMax + numEventMax * mVirtualSensorList.size();
@@ -264,9 +277,11 @@ bool SensorService::threadLoop()
     sensors_event_t scratch[minBufferSize];
     SensorDevice& device(SensorDevice::getInstance());
     const size_t vcount = mVirtualSensorList.size();
+    int mycnt = 0;
 
     ssize_t count;
     do {
+        ALOGD("IPS: SensorService::threadLoop cnt = %d", ++mycnt);
         count = device.poll(buffer, numEventMax);
         if (count<0) {
             ALOGE("sensor poll failed (%s)", strerror(-count));
@@ -313,6 +328,14 @@ bool SensorService::threadLoop()
                     sortEventBuffer(buffer, count);
                 }
             }
+        }
+        for (int i = 0; i < count; i++) {
+            if (buffer[i].type == SENSOR_TYPE_ACCELEROMETER)
+                ALOGD("Accelerometer accessed: version = %d sensor = %d "\
+                        "type = %d timestamp = %ld x=%f y=%f z=%f",
+                        buffer[i].version, buffer[i].sensor, buffer[i].type,
+                        buffer[i].timestamp, buffer[i].acceleration.x,
+                        buffer[i].acceleration.y, buffer[i].acceleration.z);
         }
 
         // send our events to clients...
@@ -610,6 +633,7 @@ SensorService::SensorEventConnection::SensorEventConnection(
         const sp<SensorService>& service, uid_t uid)
     : mService(service), mChannel(new BitTube()), mUid(uid), mPkgName(SensorService::SensorEventConnection::readPkgName())
 {
+	ALOGD("IPS: created mChannel");
 }
 
 SensorService::SensorEventConnection::~SensorEventConnection()
@@ -707,11 +731,13 @@ status_t SensorService::SensorEventConnection::sendEvents(
 
     /* test code to see if can read from sensor tube */
     ASensorEvent testEvent;
+
+    ALOGD("IPS: SensorService::SensorEventConnection::sendEvents perform read pid = %d", getpid());	
     ssize_t size_read = SensorEventQueue::read(mChannel, &testEvent, 1);
     if (size_read > 0) {
-        ALOGD("read sensor_event from app, version=%d, sensor=%d", testEvent.version, testEvent.sensor);    
+        ALOGD("IPS: read sensor_event from app, version=%d, sensor=%d", testEvent.version, testEvent.sensor);    
     } else {
-        ALOGD("didn't get anything from the sensor");
+        ALOGD("IPS: didn't get anything from the sensor");
     }
 
     // Check to exclude system service. Will do it in ruleApp.
@@ -720,6 +746,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
     //}
 
     // NOTE: ASensorEvent and sensors_event_t are the same type
+ 	ALOGD("IPS: SensorService::SensorEventConnection::sendEvents perform write pid = %d", getpid());	
     ssize_t size = SensorEventQueue::write(mChannel,
             reinterpret_cast<ASensorEvent const*>(scratch), count);
     if (size == -EAGAIN) {
@@ -733,6 +760,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
 
 sp<BitTube> SensorService::SensorEventConnection::getSensorChannel() const
 {
+    ALOGD("IPS: sensorservice:getsensorchannel sendfd=%d", mChannel->getSendFd());
     return mChannel;
 }
 
