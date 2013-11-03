@@ -700,6 +700,7 @@ Thread::Thread(bool canCallJava)
         , mTid(-1)
 #endif
 {
+        ALOGD("IPS:: canCallJava %d ", canCallJava);
 }
 
 Thread::~Thread()
@@ -757,11 +758,9 @@ status_t Thread::run(const char* name, int32_t priority, size_t stack)
 
     bool res;
     if (mCanCallJava) {
-        ALOGD("IPS: threads.run mcancallJava is true");
         res = createThreadEtc(_threadLoop,
                 this, name, priority, stack, &mThread);
     } else {
-        ALOGD("IPS: threads.run mcancallJava is false");
         res = androidCreateRawThreadEtc(_threadLoop,
                 this, name, priority, stack, &mThread);
     }
@@ -794,22 +793,25 @@ bool Thread::threadLoop_pb()
 int Thread::_threadLoop_pb(void* user)
 {
     Thread* const self = static_cast<Thread*>(user);
-    thread_data_t* t = static_cast<thread_data_t*>(user);
 
     sp<Thread> strong(self->mHoldSelf);
     wp<Thread> weak(strong);
     self->mHoldSelf.clear();
 
-    ALOGD("IPS: thread::_threadLoop_pb tid = %s", t->threadName);
-
-    self->threadLoop_pb();
+    do {
+        self->threadLoop_pb();
+        //clear strong pointer so that the thread can die
+        //strong.clear
+        //reacquire now
+        //strong = weak.promote();
+    } while(strong != 0);
 
     return 0;
 }
 
 int Thread::_threadLoop(void* user)
 {
-    Thread* const self = static_cast<Thread*>(user);
+   Thread* const self = static_cast<Thread*>(user);
 
     sp<Thread> strong(self->mHoldSelf);
     wp<Thread> weak(strong);
@@ -818,6 +820,7 @@ int Thread::_threadLoop(void* user)
 #ifdef HAVE_ANDROID_OS
     // this is very useful for debugging with gdb
     self->mTid = gettid();
+    ALOGD("IPS: Thread::_threadLoop mTid = %d", self->mTid);
 #endif
 
     bool first = true;
@@ -840,14 +843,10 @@ int Thread::_threadLoop(void* user)
                 // the thread and the thread would simply disappear after the
                 // successful ::readyToRun() call instead of entering the
                 // threadLoop at least once.
-                ALOGD("IPS: threads._threadLoop--- calling threadloop EP");
                 result = self->threadLoop();
-                ALOGD("IPS: ---threads._threadLoop ending threadloop EP");
             }
         } else {
-            ALOGD("IPS: threads._threadLoop---");
             result = self->threadLoop();
-            ALOGD("IPS: ---threads._threadLoop");
         }
 
         // establish a scope for mLock
@@ -909,6 +908,7 @@ status_t Thread::requestExitAndWait()
 
 status_t Thread::join()
 {
+    ALOGD("IPS: Thread::join");
     Mutex::Autolock _l(mLock);
     if (mThread == getThreadId()) {
         ALOGW(

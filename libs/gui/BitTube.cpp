@@ -114,22 +114,34 @@ int BitTube::getSendFd() const
     return mSendFd;
 }
 
-ssize_t BitTube::write(void const* vaddr, size_t size)
+ssize_t BitTube::write(void const* vaddr, size_t size, bool flip)
 {
     ssize_t err, len;
     do {
-        len = ::send(mSendFd, vaddr, size, MSG_DONTWAIT | MSG_NOSIGNAL);
+        if (flip) {
+            len = ::send(mReceiveFd, vaddr, size, MSG_DONTWAIT | MSG_NOSIGNAL);
+            ALOGD("IPS B::write flip fd = %d", mReceiveFd);
+        } else {
+            len = ::send(mSendFd, vaddr, size, MSG_DONTWAIT | MSG_NOSIGNAL);
+            ALOGD("IPS B::write no flip fd = %d", mSendFd);
+        }
         err = len < 0 ? errno : 0;
     } while (err == EINTR);
     return err == 0 ? len : -err;
 
 }
 
-ssize_t BitTube::read(void* vaddr, size_t size)
+ssize_t BitTube::read(void* vaddr, size_t size, bool flip)
 {
     ssize_t err, len;
     do {
-        len = ::recv(mReceiveFd, vaddr, size, MSG_DONTWAIT);
+        if (flip) {
+            len = ::recv(mSendFd, vaddr, size, 0);
+            ALOGD("IPS B::read flip fd = %d", mSendFd);
+        } else {
+            len = ::recv(mReceiveFd, vaddr, size, MSG_DONTWAIT);
+            ALOGD("IPS B::read no flip fd = %d", mReceiveFd);
+        }
         err = len < 0 ? errno : 0;
     } while (err == EINTR);
     if (err == EAGAIN || err == EWOULDBLOCK) {
@@ -153,12 +165,12 @@ status_t BitTube::writeToParcel(Parcel* reply) const
 
 
 ssize_t BitTube::sendObjects(const sp<BitTube>& tube,
-        void const* events, size_t count, size_t objSize)
+        void const* events, size_t count, size_t objSize, bool flip)
 {
     ssize_t numObjects = 0;
     for (size_t i=0 ; i<count ; i++) {
         const char* vaddr = reinterpret_cast<const char*>(events) + objSize * i;
-        ssize_t size = tube->write(vaddr, objSize);
+        ssize_t size = tube->write(vaddr, objSize, flip);
         if (size < 0) {
             // error occurred
             return size;
@@ -172,12 +184,12 @@ ssize_t BitTube::sendObjects(const sp<BitTube>& tube,
 }
 
 ssize_t BitTube::recvObjects(const sp<BitTube>& tube,
-        void* events, size_t count, size_t objSize)
+        void* events, size_t count, size_t objSize, bool flip)
 {
     ssize_t numObjects = 0;
     for (size_t i=0 ; i<count ; i++) {
         char* vaddr = reinterpret_cast<char*>(events) + objSize * i;
-        ssize_t size = tube->read(vaddr, objSize);
+        ssize_t size = tube->read(vaddr, objSize, flip);
         if (size < 0) {
             // error occurred
             return size;

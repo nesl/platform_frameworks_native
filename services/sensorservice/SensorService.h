@@ -89,7 +89,7 @@ class SensorService :
         SensorEventConnection(const sp<SensorService>& service, uid_t uid);
 
         status_t sendEvents(sensors_event_t const* buffer, size_t count,
-                sensors_event_t* scratch = NULL);
+                sensors_event_t* scratch = NULL, bool flip=false);
         bool hasSensor(int32_t handle) const;
         bool hasAnySensor() const;
         bool addSensor(int32_t handle);
@@ -98,6 +98,7 @@ class SensorService :
 
         const char* readPkgName();
         const char* getPkgName() const { return mPkgName; }
+        status_t recvEvents();
     };
 
     class SensorRecord {

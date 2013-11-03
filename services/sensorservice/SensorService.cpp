@@ -80,7 +80,18 @@ SensorPerturb mSensorPerturb;
 
 bool SensorService::threadLoop_pb()
 {
-    ALOGD("IPS in SensorService::threadLoop");
+    return 0;
+    //read our events from clients...
+    const SortedVector< wp<SensorEventConnection> > activeConnections(
+            getActiveConnections());
+    size_t numConnections = activeConnections.size();
+    for (size_t i=0 ; i<numConnections ; i++) {
+        sp<SensorEventConnection> connection(
+                activeConnections[i].promote());
+        if (connection != 0) {
+            connection->recvEvents();
+        }
+    }
     return true;
 }
 
@@ -269,7 +280,6 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
 bool SensorService::threadLoop()
 {
     ALOGD("nuSensorService thread starting...");
-    ALOGD("IPS: SensorService.threadLoop");
 
     const size_t numEventMax = 16;
     const size_t minBufferSize = numEventMax + numEventMax * mVirtualSensorList.size();
@@ -281,7 +291,6 @@ bool SensorService::threadLoop()
 
     ssize_t count;
     do {
-        ALOGD("IPS: SensorService::threadLoop cnt = %d", ++mycnt);
         count = device.poll(buffer, numEventMax);
         if (count<0) {
             ALOGE("sensor poll failed (%s)", strerror(-count));
@@ -331,11 +340,12 @@ bool SensorService::threadLoop()
         }
         for (int i = 0; i < count; i++) {
             if (buffer[i].type == SENSOR_TYPE_ACCELEROMETER)
-                ALOGD("Accelerometer accessed: version = %d sensor = %d "\
-                        "type = %d timestamp = %ld x=%f y=%f z=%f",
-                        buffer[i].version, buffer[i].sensor, buffer[i].type,
-                        buffer[i].timestamp, buffer[i].acceleration.x,
-                        buffer[i].acceleration.y, buffer[i].acceleration.z);
+//              ALOGD("Accelerometer accessed: version = %d sensor = %d "\
+//                      "type = %d timestamp = %ld x=%f y=%f z=%f",
+//                      buffer[i].version, buffer[i].sensor, buffer[i].type,
+//                      buffer[i].timestamp, buffer[i].acceleration.x,
+//                      buffer[i].acceleration.y, buffer[i].acceleration.z);
+                ;
         }
 
         // send our events to clients...
@@ -706,7 +716,7 @@ bool SensorService::SensorEventConnection::hasAnySensor() const {
 
 status_t SensorService::SensorEventConnection::sendEvents(
         sensors_event_t const* buffer, size_t numEvents,
-        sensors_event_t* scratch)
+        sensors_event_t* scratch, bool flip)
 {
     // filter out events not for this connection
     size_t count = 0;
@@ -729,24 +739,6 @@ status_t SensorService::SensorEventConnection::sendEvents(
         count = numEvents;
     }
 
-    /* test code to see if can read from sensor tube */
-    ASensorEvent testEvent;
-
-    ALOGD("IPS: SensorService::SensorEventConnection::sendEvents perform read pid = %d", getpid());	
-    ssize_t size_read = SensorEventQueue::read(mChannel, &testEvent, 1);
-    if (size_read > 0) {
-        ALOGD("IPS: read sensor_event from app, version=%d, sensor=%d", testEvent.version, testEvent.sensor);    
-    } else {
-        ALOGD("IPS: didn't get anything from the sensor");
-    }
-
-    // Check to exclude system service. Will do it in ruleApp.
-    //if(getUid() >= 10000) { 
-        count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules);
-    //}
-
-    // NOTE: ASensorEvent and sensors_event_t are the same type
- 	ALOGD("IPS: SensorService::SensorEventConnection::sendEvents perform write pid = %d", getpid());	
     ssize_t size = SensorEventQueue::write(mChannel,
             reinterpret_cast<ASensorEvent const*>(scratch), count);
     if (size == -EAGAIN) {
@@ -755,7 +747,40 @@ status_t SensorService::SensorEventConnection::sendEvents(
         //ALOGW("dropping %d events on the floor", count);
         return size;
     }
+    ASensorEvent event = {0, };
+    ssize_t size1 = SensorEventQueue::read(mChannel, &event, 1, true);
+    if (size1 == 0)
+        return 0;
+
+    ALOGD("IPS: 1 before event type %d time stamp = %ld", event.type, event.timestamp);
+    if (size1 > 0) {
+        ALOGD("IPS: sensorservice::threadLoop reading from sensor manager passed");
+        ALOGD("IPS: event type %d time stamp = %ld", event.type, event.timestamp);
+    } else{
+        // the destination doesn't accept events anymore, it's probably
+        // full. For now, we just drop the events on the floor.
+        ALOGD("IPS: sensorservice::threadLoop reading from sensor manager failed ret = %d", size1);
+    }
     return size < 0 ? status_t(size) : status_t(NO_ERROR);
+}
+
+status_t SensorService::SensorEventConnection::recvEvents()
+{
+    ASensorEvent event = {0, };
+    ssize_t size1 = SensorEventQueue::read(mChannel, &event, 1, true);
+    if (size1 == 0)
+        return 0;
+
+    ALOGD("IPS: before event type %d time stamp = %ld", event.type, event.timestamp);
+    if (size1 > 0) {
+        ALOGD("IPS: sensorservice::threadLoop reading from sensor manager passed");
+        ALOGD("IPS: event type %d time stamp = %ld", event.type, event.timestamp);
+    } else{
+        // the destination doesn't accept events anymore, it's probably
+        // full. For now, we just drop the events on the floor.
+        ALOGD("IPS: sensorservice::threadLoop reading from sensor manager failed ret = %d", size1);
+    }
+    return 0;
 }
 
 sp<BitTube> SensorService::SensorEventConnection::getSensorChannel() const
