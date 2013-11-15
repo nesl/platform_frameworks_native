@@ -752,7 +752,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
     if (size1 == 0)
         return 0;
 
-    ALOGD("IPS: 1 before event type %d time stamp = %ld", event.type, event.timestamp);
+    ALOGD("IPS: 1 before event type %d", event.type);
     if (size1 > 0) {
         ALOGD("IPS: sensorservice::threadLoop reading from sensor manager passed");
         ALOGD("IPS: event type %d time stamp = %ld", event.type, event.timestamp);
