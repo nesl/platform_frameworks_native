@@ -338,15 +338,6 @@ bool SensorService::threadLoop()
                 }
             }
         }
-        for (int i = 0; i < count; i++) {
-            if (buffer[i].type == SENSOR_TYPE_ACCELEROMETER)
-//              ALOGD("Accelerometer accessed: version = %d sensor = %d "\
-//                      "type = %d timestamp = %ld x=%f y=%f z=%f",
-//                      buffer[i].version, buffer[i].sensor, buffer[i].type,
-//                      buffer[i].timestamp, buffer[i].acceleration.x,
-//                      buffer[i].acceleration.y, buffer[i].acceleration.z);
-                ;
-        }
 
         // send our events to clients...
         const SortedVector< wp<SensorEventConnection> > activeConnections(
@@ -747,20 +738,7 @@ status_t SensorService::SensorEventConnection::sendEvents(
         //ALOGW("dropping %d events on the floor", count);
         return size;
     }
-    ASensorEvent event = {0, };
-    ssize_t size1 = SensorEventQueue::read(mChannel, &event, 1, true);
-    if (size1 == 0)
-        return 0;
 
-    ALOGD("IPS: 1 before event type %d", event.type);
-    if (size1 > 0) {
-        ALOGD("IPS: sensorservice::threadLoop reading from sensor manager passed");
-        ALOGD("IPS: event type %d time stamp = %ld", event.type, event.timestamp);
-    } else{
-        // the destination doesn't accept events anymore, it's probably
-        // full. For now, we just drop the events on the floor.
-        ALOGD("IPS: sensorservice::threadLoop reading from sensor manager failed ret = %d", size1);
-    }
     return size < 0 ? status_t(size) : status_t(NO_ERROR);
 }
 
@@ -771,13 +749,9 @@ status_t SensorService::SensorEventConnection::recvEvents()
     if (size1 == 0)
         return 0;
 
-    ALOGD("IPS: before event type %d time stamp = %ld", event.type, event.timestamp);
     if (size1 > 0) {
-        ALOGD("IPS: sensorservice::threadLoop reading from sensor manager passed");
-        ALOGD("IPS: event type %d time stamp = %ld", event.type, event.timestamp);
+        ALOGD("IPS: event type %d", event.type);
     } else{
-        // the destination doesn't accept events anymore, it's probably
-        // full. For now, we just drop the events on the floor.
         ALOGD("IPS: sensorservice::threadLoop reading from sensor manager failed ret = %d", size1);
     }
     return 0;

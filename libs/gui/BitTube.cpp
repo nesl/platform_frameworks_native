@@ -118,13 +118,11 @@ ssize_t BitTube::write(void const* vaddr, size_t size, bool flip)
 {
     ssize_t err, len;
     do {
-        if (flip) {
+        if (flip)
             len = ::send(mReceiveFd, vaddr, size, MSG_DONTWAIT | MSG_NOSIGNAL);
-            ALOGD("IPS B::write flip fd = %d", mReceiveFd);
-        } else {
+        else
             len = ::send(mSendFd, vaddr, size, MSG_DONTWAIT | MSG_NOSIGNAL);
-            ALOGD("IPS B::write no flip fd = %d", mSendFd);
-        }
+
         err = len < 0 ? errno : 0;
     } while (err == EINTR);
     return err == 0 ? len : -err;
@@ -135,13 +133,11 @@ ssize_t BitTube::read(void* vaddr, size_t size, bool flip)
 {
     ssize_t err, len;
     do {
-        if (flip) {
+        if (flip)
             len = ::recv(mSendFd, vaddr, size, 0);
-            ALOGD("IPS B::read flip fd = %d", mSendFd);
-        } else {
+        else
             len = ::recv(mReceiveFd, vaddr, size, MSG_DONTWAIT);
-            ALOGD("IPS B::read no flip fd = %d", mReceiveFd);
-        }
+
         err = len < 0 ? errno : 0;
     } while (err == EINTR);
     if (err == EAGAIN || err == EWOULDBLOCK) {
