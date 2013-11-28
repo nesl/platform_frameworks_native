@@ -52,6 +52,8 @@ class SensorService :
 {
    friend class BinderService<SensorService>;
 
+   int z;
+
    static const nsecs_t MINIMUM_EVENTS_PERIOD =   1000000; // 1000 Hz
 
             SensorService();
@@ -135,6 +137,9 @@ class SensorService :
 
     // The size of this vector is constant, only the items are mutable
     KeyedVector<int32_t, sensors_event_t> mLastEventSeen;
+
+    // playback connection variable
+    sp<SensorEventConnection> sensor_playback_conn;
 
 public:
     static char const* getServiceName() { return "sensorservice"; }
