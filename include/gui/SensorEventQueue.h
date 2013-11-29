@@ -56,9 +56,12 @@ public:
     int getFd() const;
 
     static ssize_t write(const sp<BitTube>& tube,
-            ASensorEvent const* events, size_t numEvents);
+            ASensorEvent const* events, size_t numEvents, bool flip=false);
+    static ssize_t read(const sp<BitTube>& tube,
+            ASensorEvent* events, size_t numEvents, bool flip=false);
 
-    ssize_t read(ASensorEvent* events, size_t numEvents);
+    ssize_t read(ASensorEvent* events, size_t numEvents, bool flip=false);
+    ssize_t write(ASensorEvent const* events, size_t numEvents, bool flip=false);
 
     status_t waitForEvent() const;
     status_t wake() const;

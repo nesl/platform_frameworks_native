@@ -694,11 +694,13 @@ Thread::Thread(bool canCallJava)
         mThread(thread_id_t(-1)),
         mLock("Thread::mLock"),
         mStatus(NO_ERROR),
-        mExitPending(false), mRunning(false)
+        mExitPending(false), mRunning(false),
+        mRunning_pb(false), mThread_pb(thread_id_t(-1))
 #ifdef HAVE_ANDROID_OS
         , mTid(-1)
 #endif
 {
+        ALOGD("IPS:: canCallJava %d ", canCallJava);
 }
 
 Thread::~Thread()
@@ -708,6 +710,30 @@ Thread::~Thread()
 status_t Thread::readyToRun()
 {
     return NO_ERROR;
+}
+
+status_t Thread::run_pb(const char* name, int32_t priority, size_t stack)
+{
+    ALOGD("IPS: Thread::run_playback Running %d thread", name);
+
+    Mutex::Autolock _l(mLock);
+
+    bool res;
+    if (mCanCallJava) {
+        res = createThreadEtc(_threadLoop_pb,
+                this, name, priority, stack, &mThread_pb);
+    } else {
+        res = androidCreateRawThreadEtc(_threadLoop_pb,
+                this, name, priority, stack, &mThread_pb);
+    }
+
+    // Do not refer to mStatus here: The thread is already running (may, in fact
+    // already have exited with a valid mStatus result). The NO_ERROR indication
+    // here merely indicates successfully starting the thread and does not
+    // imply successful termination/execution.
+    return NO_ERROR;
+
+    // Exiting scope of mLock is a memory barrier and allows new thread to run
 }
 
 status_t Thread::run(const char* name, int32_t priority, size_t stack)
@@ -757,9 +783,35 @@ status_t Thread::run(const char* name, int32_t priority, size_t stack)
     // Exiting scope of mLock is a memory barrier and allows new thread to run
 }
 
-int Thread::_threadLoop(void* user)
+
+bool Thread::threadLoop_pb()
+{
+        ALOGD("IPS Thread::threadLoop_pb called from _threadLoop_pb");
+        return true;
+}
+
+int Thread::_threadLoop_pb(void* user)
 {
     Thread* const self = static_cast<Thread*>(user);
+
+    sp<Thread> strong(self->mHoldSelf);
+    wp<Thread> weak(strong);
+    self->mHoldSelf.clear();
+
+    do {
+        self->threadLoop_pb();
+        //clear strong pointer so that the thread can die
+        //strong.clear
+        //reacquire now
+        //strong = weak.promote();
+    } while(strong != 0);
+
+    return 0;
+}
+
+int Thread::_threadLoop(void* user)
+{
+   Thread* const self = static_cast<Thread*>(user);
 
     sp<Thread> strong(self->mHoldSelf);
     wp<Thread> weak(strong);
@@ -768,6 +820,7 @@ int Thread::_threadLoop(void* user)
 #ifdef HAVE_ANDROID_OS
     // this is very useful for debugging with gdb
     self->mTid = gettid();
+    ALOGD("IPS: Thread::_threadLoop mTid = %d", self->mTid);
 #endif
 
     bool first = true;
@@ -822,6 +875,7 @@ int Thread::_threadLoop(void* user)
     return 0;
 }
 
+
 void Thread::requestExit()
 {
     Mutex::Autolock _l(mLock);
@@ -854,6 +908,7 @@ status_t Thread::requestExitAndWait()
 
 status_t Thread::join()
 {
+    ALOGD("IPS: Thread::join");
     Mutex::Autolock _l(mLock);
     if (mThread == getThreadId()) {
         ALOGW(

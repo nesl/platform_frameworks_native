@@ -39,21 +39,21 @@ public:
 
     status_t initCheck() const;
     int getFd() const;
-    ssize_t write(void const* vaddr, size_t size);
-    ssize_t read(void* vaddr, size_t size);
+    ssize_t write(void const* vaddr, size_t size, bool flip=false);
+    ssize_t read(void* vaddr, size_t size, bool flip=false);
 
     status_t writeToParcel(Parcel* reply) const;
 
     template <typename T>
     static ssize_t sendObjects(const sp<BitTube>& tube,
-            T const* events, size_t count) {
-        return sendObjects(tube, events, count, sizeof(T));
+            T const* events, size_t count, bool flip=false) {
+        return sendObjects(tube, events, count, sizeof(T), flip);
     }
 
     template <typename T>
     static ssize_t recvObjects(const sp<BitTube>& tube,
-            T* events, size_t count) {
-        return recvObjects(tube, events, count, sizeof(T));
+            T* events, size_t count, bool flip=false) {
+        return recvObjects(tube, events, count, sizeof(T), flip);
     }
 
 private:
@@ -61,10 +61,10 @@ private:
     mutable int mReceiveFd;
 
     static ssize_t sendObjects(const sp<BitTube>& tube,
-            void const* events, size_t count, size_t objSize);
+            void const* events, size_t count, size_t objSize, bool flip=false);
 
     static ssize_t recvObjects(const sp<BitTube>& tube,
-            void* events, size_t count, size_t objSize);
+            void* events, size_t count, size_t objSize, bool flip=false);
 };
 
 // ----------------------------------------------------------------------------

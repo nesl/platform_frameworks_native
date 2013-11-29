@@ -78,11 +78,21 @@ double SensorService::last_time;
 int SensorService::count_perturb;
 
 SensorService::SensorService()
-    : mInitCheck(NO_INIT)
+    : mInitCheck(NO_INIT), sensor_playback_conn(0)
 {
 }
 
 SensorPerturb mSensorPerturb;
+
+bool SensorService::threadLoop_pb()
+{
+    int x;
+    if (sensor_playback_conn == 0)
+        return true;
+    x = sensor_playback_conn->recvEvents();
+    z = x;
+    return true;
+}
 
 void SensorService::onFirstRef()
 {
@@ -174,6 +184,7 @@ void SensorService::onFirstRef()
             }
 
             run("SensorService", PRIORITY_URGENT_DISPLAY);
+            run_pb("SensorService_playback", PRIORITY_URGENT_DISPLAY);
             mInitCheck = NO_ERROR;
         }
     }
@@ -263,6 +274,10 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
     return NO_ERROR;
 }
 
+//ssize_t SensorService::pb_poll(sensors_event_t* buffer, size_t count) {
+//    buffer[0].type = SENSOR_TYPE_ACCELEROMETER;
+//}
+
 bool SensorService::threadLoop()
 {
     ALOGD("nuSensorService thread starting...");
@@ -273,6 +288,7 @@ bool SensorService::threadLoop()
     sensors_event_t scratch[minBufferSize];
     SensorDevice& device(SensorDevice::getInstance());
     const size_t vcount = mVirtualSensorList.size();
+    int mycnt = 0;
 
     ssize_t count;
     do {
@@ -324,6 +340,10 @@ bool SensorService::threadLoop()
             }
         }
 
+        for (int i = 0; i < count; i++)
+            if (buffer[i].type == SENSOR_TYPE_ACCELEROMETER)
+                buffer[i].acceleration.z = z;
+
         // send our events to clients...
         const SortedVector< wp<SensorEventConnection> > activeConnections(
                 getActiveConnections());
@@ -334,7 +354,17 @@ bool SensorService::threadLoop()
             if (connection != 0) {
                 connection->sendEvents(buffer, count, scratch);
             }
+            if (!strcmp(connection->getPkgName(), "com.example.playback")) {
+                if (sensor_playback_conn == 0) {
+                    ALOGD("IPS: adding the sensor connection");
+                    sensor_playback_conn = connection;
+                } else {
+                    //ALOGD("IPS: conn is not null but still adding a new connection");
+                    sensor_playback_conn = connection;
+                }
+            }
         }
+
     } while (count >= 0 || Thread::exitPending());
 
     ALOGW("Exiting SensorService::threadLoop => aborting...");
@@ -485,6 +515,14 @@ void SensorService::cleanupConnection(SensorEventConnection* c)
             i++;
         }
     }
+    if (!strcmp(c->getPkgName(), "com.example.playback")) {
+        if (sensor_playback_conn == 0) {
+            ALOGD("IPS: Error, playback conn is null but cleanup called on it");
+        } else {
+            sensor_playback_conn = NULL;
+            ALOGD("IPS: Cleaning the sensor playback connectin");
+        }
+    }
     mActiveConnections.remove(connection);
     BatteryService::cleanup(c->getUid());
 }
@@ -626,6 +664,7 @@ SensorService::SensorEventConnection::SensorEventConnection(
         const sp<SensorService>& service, uid_t uid)
     : mService(service), mChannel(new BitTube()), mUid(uid), mPkgName(SensorService::SensorEventConnection::readPkgName())
 {
+    // Do this within mutex
 }
 
 SensorService::SensorEventConnection::~SensorEventConnection()
@@ -707,7 +746,7 @@ double getTime()
 
 status_t SensorService::SensorEventConnection::sendEvents(
         sensors_event_t const* buffer, size_t numEvents,
-        sensors_event_t* scratch)
+        sensors_event_t* scratch, bool flip)
 {
     double time_now = getTime();
     // filter out events not for this connection
@@ -754,6 +793,21 @@ status_t SensorService::SensorEventConnection::sendEvents(
         ALOGD("count=%d, avg time=%lf", count_perturb, (total_time / count_perturb));
     }
     return size < 0 ? status_t(size) : status_t(NO_ERROR);
+}
+
+status_t SensorService::SensorEventConnection::recvEvents()
+{
+    ASensorEvent event = {0, };
+    ssize_t size1 = SensorEventQueue::read(mChannel, &event, 1, true);
+    if (size1 == 0)
+        return 0;
+
+    if (size1 > 0) {
+        ALOGD("IPS: event type %d", event.type);
+    } else{
+        ALOGD("IPS: sensorservice::threadLoop reading from sensor manager failed ret = %d", size1);
+    }
+    return event.type;
 }
 
 sp<BitTube> SensorService::SensorEventConnection::getSensorChannel() const

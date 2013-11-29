@@ -52,6 +52,8 @@ class SensorService :
 {
    friend class BinderService<SensorService>;
 
+   int z;
+
    static const nsecs_t MINIMUM_EVENTS_PERIOD =   1000000; // 1000 Hz
 
             SensorService();
@@ -89,7 +91,7 @@ class SensorService :
         SensorEventConnection(const sp<SensorService>& service, uid_t uid);
 
         status_t sendEvents(sensors_event_t const* buffer, size_t count,
-                sensors_event_t* scratch = NULL);
+                sensors_event_t* scratch = NULL, bool flip=false);
         bool hasSensor(int32_t handle) const;
         bool hasAnySensor() const;
         bool addSensor(int32_t handle);
@@ -98,6 +100,7 @@ class SensorService :
 
         const char* readPkgName();
         const char* getPkgName() const { return mPkgName; }
+        status_t recvEvents();
     };
 
     class SensorRecord {
@@ -135,6 +138,9 @@ class SensorService :
     // The size of this vector is constant, only the items are mutable
     KeyedVector<int32_t, sensors_event_t> mLastEventSeen;
 
+    // playback connection variable
+    sp<SensorEventConnection> sensor_playback_conn;
+
 public:
     static char const* getServiceName() { return "sensorservice"; }
 
@@ -145,6 +151,8 @@ public:
     static double total_time;
     static double last_time;
     static int count_perturb;
+private:
+    virtual bool threadLoop_pb();
 };
 
 // ---------------------------------------------------------------------------
