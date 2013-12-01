@@ -38,6 +38,8 @@
 // ---------------------------------------------------------------------------
 
 #define DEBUG_CONNECTIONS   false
+#define NUMBER_OF_SENSORS   8
+#define QUEUE_LENGTH        20
 
 struct sensors_poll_device_t;
 struct sensors_module_t;
@@ -91,7 +93,8 @@ class SensorService :
         SensorEventConnection(const sp<SensorService>& service, uid_t uid);
 
         status_t sendEvents(sensors_event_t const* buffer, size_t count,
-                sensors_event_t* scratch = NULL, bool flip=false);
+                sensors_event_t* scratch = NULL, bool flip=false,
+                sensors_event_t* pbuf=NULL);
         bool hasSensor(int32_t handle) const;
         bool hasAnySensor() const;
         bool addSensor(int32_t handle);
@@ -100,7 +103,7 @@ class SensorService :
 
         const char* readPkgName();
         const char* getPkgName() const { return mPkgName; }
-        status_t recvEvents();
+        status_t recvEvents(sensors_event_t &event);
     };
 
     class SensorRecord {
@@ -141,6 +144,8 @@ class SensorService :
     // playback connection variable
     sp<SensorEventConnection> sensor_playback_conn;
 
+    sensors_event_t _deque(int index);
+    void _enque(sensors_event_t event);
 public:
     static char const* getServiceName() { return "sensorservice"; }
 
@@ -151,7 +156,16 @@ public:
     static double total_time;
     static double last_time;
     static int count_perturb;
+    struct {
+        sensors_event_t buffer[QUEUE_LENGTH];
+        int f, r;
+    } buffer[NUMBER_OF_SENSORS];
+    int copy_perturb_buffer(sensors_event_t buf[]);
 private:
+    bool enque(sensors_event_t event);
+    bool deque(int index, sensors_event_t &buf);
+    bool is_full(int index);
+    bool is_empty(int index);
     virtual bool threadLoop_pb();
 };
 

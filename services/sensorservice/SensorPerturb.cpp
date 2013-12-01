@@ -379,8 +379,8 @@ void SensorPerturb::updateCounters(size_t count, size_t start_pos,
 }
 
 size_t SensorPerturb::transformData(
-        uid_t uid, const char* pkgName, sensors_event_t* scratch, 
-        size_t count, PrivacyRules* mPrivacyRules ) {
+        uid_t uid, const char* pkgName, sensors_event_t* scratch,
+        size_t count, PrivacyRules* mPrivacyRules, sensors_event_t *pbuf) {
 
     size_t start_pos, end_pos;
     size_t i = 0;

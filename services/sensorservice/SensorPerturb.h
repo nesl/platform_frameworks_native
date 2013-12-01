@@ -45,7 +45,7 @@ public:
     mutable Mutex mLock;
     void initCounter();
     size_t transformData(uid_t uid, const char* pkgName, sensors_event_t* scratch,
-            size_t count, PrivacyRules* mPrivacyRules);
+            size_t count, PrivacyRules* mPrivacyRules, sensors_event_t *pbuf=NULL);
 };
 
 }; // namespace android
