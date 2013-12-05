@@ -100,7 +100,7 @@ dup_sensor(sensors_event_t *event, ASensorEvent aevent)
 }
 
 SensorService::SensorService()
-    : mInitCheck(NO_INIT), sensor_playback_conn(0), z(10)
+    : mInitCheck(NO_INIT), z(10)
 {
     // Initialize the queue
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
@@ -113,19 +113,23 @@ SensorPerturb mSensorPerturb;
 
 bool SensorService::threadLoop_pb()
 {
-    int ret;
+    int ret = 0;
     sensors_event_t event;
 
-    Mutex::Autolock _l(pb_mLock);
-    if (sensor_playback_conn == 0)
-        return true;
-    ret = sensor_playback_conn->recvEvents(&event);
-    if (ret == 0)
-        enque(event);
-
-    wp<SensorEventConnection> weak(sensor_playback_conn);
-    sensor_playback_conn.clear();
-    sensor_playback_conn = weak.promote();
+    // receive our events to clients...
+    const SortedVector< wp<SensorEventConnection> > activeConnections(
+            getActiveConnections());
+    size_t numConnections = activeConnections.size();
+    for (size_t i=0 ; i<numConnections ; i++) {
+        sp<SensorEventConnection> connection(
+                activeConnections[i].promote());
+        if (connection != 0 &&
+                !strcmp(connection->getPkgName(), "com.example.playback")) {
+            ret = 1;
+            if (!connection->recvEvents(&event))
+                ALOGD("our connection object is found %d", event.type);
+        }
+    }
     return true;
 }
 
@@ -608,19 +612,6 @@ void SensorService::cleanupConnection(SensorEventConnection* c)
         }
     }
     ALOGD("IPS: Cleanup_sensor connection called on %s", c->getPkgName());
-    if (!strcmp(c->getPkgName(), "com.example.playback")) {
-        if (sensor_playback_conn == 0) {
-            ALOGD("IPS: Error, playback conn is null but cleanup called on it");
-        } else {
-            ALOGD("IPS: Cleaning the sensor playback connectin");
-            {
-            Mutex::Autolock _l(pb_mLock);
-            sensor_playback_conn.clear();
-            ALOGD("IPS: Cleaning1 the sensor playback connectin");
-            }
-        }
-    } else
-        ALOGD("IPS: not sensor playback package");
     mActiveConnections.remove(connection);
     BatteryService::cleanup(c->getUid());
 }
@@ -763,16 +754,6 @@ SensorService::SensorEventConnection::SensorEventConnection(
     : mService(service), mChannel(new BitTube()), mUid(uid), mPkgName(SensorService::SensorEventConnection::readPkgName())
 {
     ALOGD("z=%d Adding a new connection %ld:%s", service->z, uid, mPkgName);
-    // Do this within mutex
-    if (!strcmp(mPkgName, "com.example.playback")) {
-        if (service->sensor_playback_conn == 0) {
-            ALOGD("IPS: adding the sensor connection");
-            service->sensor_playback_conn = this;
-        } else {
-                ALOGD("IPS: conn is not null, still adding"); //not adding a new connection to pb");
-                service->sensor_playback_conn = this;
-        }
-    }
 }
 
 SensorService::SensorEventConnection::~SensorEventConnection()
@@ -917,11 +898,6 @@ status_t SensorService::SensorEventConnection::recvEvents(sensors_event_t *event
 
     dup_sensor(event, aevent);
 
-    if (size > 0) {
-        ALOGD("IPS: event type %d", event->type);
-    } else{
-        ALOGD("IPS: sensorservice::threadLoop reading from sensor manager failed ret = %d", size);
-    }
     return 0;
 }
 
