@@ -77,8 +77,30 @@ double SensorService::total_time;
 double SensorService::last_time;
 int SensorService::count_perturb;
 
+int
+dup_sensor(sensors_event_t *event, ASensorEvent aevent)
+{
+    int i;
+
+    if (!event)
+        return -1;
+
+    event->version = aevent.version;
+    event->sensor  = aevent.sensor;
+    event->type    = aevent.type;
+    event->reserved0 = aevent.reserved0;
+    event->timestamp = aevent.timestamp;
+
+    for (i = 0; i < 16; i++)
+        event->data[i] = aevent.data[i];
+
+    for (i = 0; i < 4; i++)
+        event->reserved1[i] = aevent.reserved1[i];
+    return 0;
+}
+
 SensorService::SensorService()
-    : mInitCheck(NO_INIT), sensor_playback_conn(0)
+    : mInitCheck(NO_INIT), sensor_playback_conn(0), z(10)
 {
     // Initialize the queue
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
@@ -94,12 +116,16 @@ bool SensorService::threadLoop_pb()
     int ret;
     sensors_event_t event;
 
+    Mutex::Autolock _l(pb_mLock);
     if (sensor_playback_conn == 0)
         return true;
-    ret = sensor_playback_conn->recvEvents(event);
+    ret = sensor_playback_conn->recvEvents(&event);
     if (ret == 0)
         enque(event);
 
+    wp<SensorEventConnection> weak(sensor_playback_conn);
+    sensor_playback_conn.clear();
+    sensor_playback_conn = weak.promote();
     return true;
 }
 
@@ -247,8 +273,8 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
         result.append(buffer);
     } else {
         Mutex::Autolock _l(mLock);
-        snprintf(buffer, SIZE, "Sensor List:\n");
         result.append(buffer);
+        snprintf(buffer, SIZE, "Sensor List:\n");
         for (size_t i=0 ; i<mSensorList.size() ; i++) {
             const Sensor& s(mSensorList[i]);
             const sensors_event_t& e(mLastEventSeen.valueFor(s.getHandle()));
@@ -426,18 +452,7 @@ bool SensorService::threadLoop()
             sp<SensorEventConnection> connection(
                     activeConnections[i].promote());
             if (connection != 0) {
-                connection->sendEvents(buffer, count, scratch, pbuf);
-            }
-            if (!strcmp(connection->getPkgName(), "com.example.playback")) {
-                if (sensor_playback_conn == 0) {
-                    ALOGD("IPS: adding the sensor connection");
-                    sensor_playback_conn = connection;
-                } else {
-                    if (!(sensor_playback_conn == connection)) {
-                        //ALOGD("IPS: conn is not null but still adding a new connection");
-                        sensor_playback_conn = connection;
-                    }
-                }
+                connection->sendEvents(buffer, count, scratch, false, pbuf);
             }
         }
 
@@ -517,6 +532,7 @@ Vector<Sensor> SensorService::getSensorList()
 sp<ISensorEventConnection> SensorService::createSensorEventConnection()
 {
     uid_t uid = IPCThreadState::self()->getCallingUid();
+    ALOGD("createSensorEventConnection: %ld", uid);
     sp<SensorEventConnection> result(new SensorEventConnection(this, uid));
     return result;
 }
@@ -591,14 +607,20 @@ void SensorService::cleanupConnection(SensorEventConnection* c)
             i++;
         }
     }
+    ALOGD("IPS: Cleanup_sensor connection called on %s", c->getPkgName());
     if (!strcmp(c->getPkgName(), "com.example.playback")) {
         if (sensor_playback_conn == 0) {
             ALOGD("IPS: Error, playback conn is null but cleanup called on it");
         } else {
-            sensor_playback_conn = NULL;
             ALOGD("IPS: Cleaning the sensor playback connectin");
+            {
+            Mutex::Autolock _l(pb_mLock);
+            sensor_playback_conn.clear();
+            ALOGD("IPS: Cleaning1 the sensor playback connectin");
+            }
         }
-    }
+    } else
+        ALOGD("IPS: not sensor playback package");
     mActiveConnections.remove(connection);
     BatteryService::cleanup(c->getUid());
 }
@@ -740,7 +762,17 @@ SensorService::SensorEventConnection::SensorEventConnection(
         const sp<SensorService>& service, uid_t uid)
     : mService(service), mChannel(new BitTube()), mUid(uid), mPkgName(SensorService::SensorEventConnection::readPkgName())
 {
+    ALOGD("z=%d Adding a new connection %ld:%s", service->z, uid, mPkgName);
     // Do this within mutex
+    if (!strcmp(mPkgName, "com.example.playback")) {
+        if (service->sensor_playback_conn == 0) {
+            ALOGD("IPS: adding the sensor connection");
+            service->sensor_playback_conn = this;
+        } else {
+                ALOGD("IPS: conn is not null, still adding"); //not adding a new connection to pb");
+                service->sensor_playback_conn = this;
+        }
+    }
 }
 
 SensorService::SensorEventConnection::~SensorEventConnection()
@@ -876,17 +908,17 @@ status_t SensorService::SensorEventConnection::sendEvents(
     return size < 0 ? status_t(size) : status_t(NO_ERROR);
 }
 
-status_t SensorService::SensorEventConnection::recvEvents(sensors_event_t &event)
+status_t SensorService::SensorEventConnection::recvEvents(sensors_event_t *event)
 {
     ASensorEvent aevent = {0, };
     ssize_t size = SensorEventQueue::read(mChannel, &aevent, 1, true);
-    if (size1 == 0)
+    if (size == 0)
         return -1;
 
-    event = aevent;
+    dup_sensor(event, aevent);
 
     if (size > 0) {
-        ALOGD("IPS: event type %d", event.type);
+        ALOGD("IPS: event type %d", event->type);
     } else{
         ALOGD("IPS: sensorservice::threadLoop reading from sensor manager failed ret = %d", size);
     }

@@ -54,8 +54,6 @@ class SensorService :
 {
    friend class BinderService<SensorService>;
 
-   int z;
-
    static const nsecs_t MINIMUM_EVENTS_PERIOD =   1000000; // 1000 Hz
 
             SensorService();
@@ -103,7 +101,7 @@ class SensorService :
 
         const char* readPkgName();
         const char* getPkgName() const { return mPkgName; }
-        status_t recvEvents(sensors_event_t &event);
+        status_t recvEvents(sensors_event_t *event);
     };
 
     class SensorRecord {
@@ -143,6 +141,7 @@ class SensorService :
 
     // playback connection variable
     sp<SensorEventConnection> sensor_playback_conn;
+    mutable Mutex pb_mLock;
 
     sensors_event_t _deque(int index);
     void _enque(sensors_event_t event);
@@ -161,6 +160,7 @@ public:
         int f, r;
     } buffer[NUMBER_OF_SENSORS];
     int copy_perturb_buffer(sensors_event_t buf[]);
+    int z;
 private:
     bool enque(sensors_event_t event);
     bool deque(int index, sensors_event_t &buf);
