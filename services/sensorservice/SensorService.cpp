@@ -125,9 +125,13 @@ bool SensorService::threadLoop_pb()
                 activeConnections[i].promote());
         if (connection != 0 &&
                 !strcmp(connection->getPkgName(), "com.example.playback")) {
-            ret = 1;
-            if (!connection->recvEvents(&event))
-                ALOGD("our connection object is found %d", event.type);
+            ret = connection->recvEvents(&event);
+            if (ret == 0)
+                ALOGD("IPS:timestamp %lld type %d float values =%f %f %f",
+                        event.timestamp, event.type,
+                        event.data[0], event.data[1], event.data[2]);
+            else if (ret < 0)
+                ALOGD("IPS: error %s", strerror(-ret));
         }
     }
     return true;
@@ -894,7 +898,9 @@ status_t SensorService::SensorEventConnection::recvEvents(sensors_event_t *event
     ASensorEvent aevent = {0, };
     ssize_t size = SensorEventQueue::read(mChannel, &aevent, 1, true);
     if (size == 0)
-        return -1;
+        return 1;
+    else if (size < 0)
+        return size;
 
     dup_sensor(event, aevent);
 
