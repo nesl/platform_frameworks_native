@@ -28,6 +28,7 @@
 namespace android {
 // ----------------------------------------------------------------------------
 
+class BitTube;
 class Sensor;
 class ISensorEventConnection;
 
@@ -38,6 +39,7 @@ public:
 
     virtual Vector<Sensor> getSensorList() = 0;
     virtual sp<ISensorEventConnection> createSensorEventConnection() = 0;
+    virtual sp<BitTube> getInputChannel() = 0;
 };
 
 // ----------------------------------------------------------------------------

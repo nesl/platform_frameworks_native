@@ -20,6 +20,7 @@
 using namespace android;
 
 int main(int argc, char** argv) {
+    ALOGD("Patched sensor service.");
     SensorService::publishAndJoinThreadPool();
     return 0;
 }

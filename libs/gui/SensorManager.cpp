@@ -146,5 +146,24 @@ sp<SensorEventQueue> SensorManager::createEventQueue()
     return queue;
 }
 
+sp<BitTube> SensorManager::getInputChannel()
+{
+    ALOGD("SensorManager::getInputChannel() called");
+    sp<BitTube> channel;
+
+    Mutex::Autolock _l(mLock);
+    while (assertStateLocked() == NO_ERROR) {
+        channel = mSensorServer->getInputChannel();
+        if (channel == NULL) {
+            // SensorService just died.
+            ALOGE("getInputChannel: channel is NULL. SensorService died.");
+            continue;
+        }
+        break;
+    }
+    ALOGD("SensorManager::getInputChannel(), channel=%d", channel.get());
+    return channel;
+}
+
 // ----------------------------------------------------------------------------
 }; // namespace android

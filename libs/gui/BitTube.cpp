@@ -34,7 +34,6 @@ namespace android {
 // we really need.  So we make it smaller.
 static const size_t SOCKET_BUFFER_SIZE = 4 * 1024;
 
-
 BitTube::BitTube()
     : mSendFd(-1), mReceiveFd(-1)
 {
@@ -49,6 +48,7 @@ BitTube::BitTube()
         fcntl(sockets[1], F_SETFL, O_NONBLOCK);
         mReceiveFd = sockets[0];
         mSendFd = sockets[1];
+        ALOGD("BitTube::BitTube constructed with receiveFd=%d and sendFd=%d", mReceiveFd, mSendFd);
     } else {
         mReceiveFd = -errno;
         ALOGE("BitTube: pipe creation failed (%s)", strerror(-mReceiveFd));
@@ -58,7 +58,10 @@ BitTube::BitTube()
 BitTube::BitTube(const Parcel& data)
     : mSendFd(-1), mReceiveFd(-1)
 {
-    mReceiveFd = dup(data.readFileDescriptor());
+    ALOGD("BitTube::BitTube with parcel data");
+    int origReceiveFd = data.readFileDescriptor();
+    mReceiveFd = dup(origReceiveFd);
+    ALOGD("BitTube::BitTube receiveFd orig=%d, duped=%d", origReceiveFd, mReceiveFd);
     if (mReceiveFd >= 0) {
         int size = SOCKET_BUFFER_SIZE;
         setsockopt(mReceiveFd, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size));
@@ -66,8 +69,22 @@ BitTube::BitTube(const Parcel& data)
         fcntl(mReceiveFd, F_SETFL, O_NONBLOCK);
     } else {
         mReceiveFd = -errno;
-        ALOGE("BitTube(Parcel): can't dup filedescriptor (%s)",
+        ALOGE("BitTube(Parcel): can't dup receive filedescriptor (%s)",
                 strerror(-mReceiveFd));
+    }
+
+    int origSendFd = data.readFileDescriptor();
+    mSendFd = dup(origSendFd);
+    ALOGD("BitTube::BitTube sendFd orig=%d, duped=%d", origSendFd, mSendFd);
+    if (mSendFd >= 0) {
+        int size = SOCKET_BUFFER_SIZE;
+        setsockopt(mSendFd, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size));
+        setsockopt(mSendFd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
+        fcntl(mSendFd, F_SETFL, O_NONBLOCK);
+    } else {
+        mSendFd = -errno;
+        ALOGE("BitTube(Parcel): can't dup send filedescriptor (%s)",
+                strerror(-mSendFd));
     }
 }
 
@@ -121,12 +138,21 @@ ssize_t BitTube::read(void* vaddr, size_t size)
 
 status_t BitTube::writeToParcel(Parcel* reply) const
 {
-    if (mReceiveFd < 0)
+    ALOGD("BitTube::writeToParcel");
+    if (mReceiveFd < 0 || mSendFd < 0) {
+        ALOGE("BitTube::writeToParcel mReceiveFd < 0 || mSendFd < 0");
         return -EINVAL;
+    }
 
-    status_t result = reply->writeDupFileDescriptor(mReceiveFd);
-    close(mReceiveFd);
-    mReceiveFd = -1;
+    status_t result;
+    ALOGD("BitTube::writeToParcel writing mReceiveFd=%d", mReceiveFd);
+    result = reply->writeDupFileDescriptor(mReceiveFd);
+    ALOGD("BitTube::writeToParcel writing mSendFd=%d", mSendFd);
+    result = reply->writeDupFileDescriptor(mSendFd);
+
+    // Don't close anything.
+    //close(mReceiveFd);
+    //mReceiveFd = -1;
     return result;
 }
 
@@ -134,6 +160,7 @@ status_t BitTube::writeToParcel(Parcel* reply) const
 ssize_t BitTube::sendObjects(const sp<BitTube>& tube,
         void const* events, size_t count, size_t objSize)
 {
+    //ALOGD("BitTube::sendObjects");
     ssize_t numObjects = 0;
     for (size_t i=0 ; i<count ; i++) {
         const char* vaddr = reinterpret_cast<const char*>(events) + objSize * i;
@@ -153,6 +180,7 @@ ssize_t BitTube::sendObjects(const sp<BitTube>& tube,
 ssize_t BitTube::recvObjects(const sp<BitTube>& tube,
         void* events, size_t count, size_t objSize)
 {
+    //ALOGD("BitTube::recvObjects");
     ssize_t numObjects = 0;
     for (size_t i=0 ; i<count ; i++) {
         char* vaddr = reinterpret_cast<char*>(events) + objSize * i;

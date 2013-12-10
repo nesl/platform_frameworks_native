@@ -47,6 +47,7 @@
 #include "RotationVectorSensor.h"
 #include "SensorFusion.h"
 #include "SensorService.h"
+#include "Transducer.h"
 
 namespace android {
 // ---------------------------------------------------------------------------
@@ -70,6 +71,7 @@ void SensorService::onFirstRef()
     ALOGD("nuSensorService starting...");
 
     SensorDevice& dev(SensorDevice::getInstance());
+    Transducer& transducer(Transducer::getInstance());
 
     if (dev.initCheck() == NO_ERROR) {
         sensor_t const* list;
@@ -239,22 +241,31 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
 
 bool SensorService::threadLoop()
 {
-    ALOGD("nuSensorService thread starting...");
+    ALOGD("SensorService::threadLoop()");
 
     const size_t numEventMax = 16;
     const size_t minBufferSize = numEventMax + numEventMax * mVirtualSensorList.size();
     sensors_event_t buffer[minBufferSize];
     sensors_event_t scratch[minBufferSize];
     SensorDevice& device(SensorDevice::getInstance());
+    Transducer& transducer(Transducer::getInstance());
     const size_t vcount = mVirtualSensorList.size();
 
     ssize_t count;
     do {
+        count = transducer.poll(buffer, numEventMax);
+        if (count<0) {
+            ALOGE("transducer poll failed (%s)", strerror(-count));
+            break;
+        }
+
+        /*
         count = device.poll(buffer, numEventMax);
         if (count<0) {
             ALOGE("sensor poll failed (%s)", strerror(-count));
             break;
         }
+        */
 
         recordLastValue(buffer, count);
 
@@ -302,10 +313,14 @@ bool SensorService::threadLoop()
         const SortedVector< wp<SensorEventConnection> > activeConnections(
                 getActiveConnections());
         size_t numConnections = activeConnections.size();
+        ALOGD_IF(DEBUG_CONNECTIONS,
+            "SensorService numConnections=%d", activeConnections.size());
         for (size_t i=0 ; i<numConnections ; i++) {
             sp<SensorEventConnection> connection(
                     activeConnections[i].promote());
             if (connection != 0) {
+                ALOGD_IF(DEBUG_CONNECTIONS,
+                    "SensorService sendEvents to connection uid=%d", connection->getUid());
                 connection->sendEvents(buffer, count, scratch);
             }
         }
@@ -384,9 +399,15 @@ Vector<Sensor> SensorService::getSensorList()
 
 sp<ISensorEventConnection> SensorService::createSensorEventConnection()
 {
+    ALOGD_IF(DEBUG_CONNECTIONS, "SensorService::createSensorEventConnection");
     uid_t uid = IPCThreadState::self()->getCallingUid();
     sp<SensorEventConnection> result(new SensorEventConnection(this, uid));
     return result;
+}
+
+sp<BitTube> SensorService::getInputChannel() {
+    ALOGD_IF(DEBUG_CONNECTIONS, "SensorService::getInputChannel()");
+    return Transducer::getInstance().getInputChannel();
 }
 
 void SensorService::cleanupConnection(SensorEventConnection* c)
@@ -428,11 +449,14 @@ void SensorService::cleanupConnection(SensorEventConnection* c)
 status_t SensorService::enable(const sp<SensorEventConnection>& connection,
         int handle)
 {
+    ALOGD("SensorService::enable");
     if (mInitCheck != NO_ERROR)
         return mInitCheck;
 
     Mutex::Autolock _l(mLock);
     SensorInterface* sensor = mSensorMap.valueFor(handle);
+    ALOGD("SensorService::enable {handle=%d,type=%d,name=%s}",
+        handle, sensor->getSensor().getType(), sensor->getSensor().getName().string());
     status_t err = sensor ? sensor->activate(connection.get(), true) : status_t(BAD_VALUE);
     if (err == NO_ERROR) {
         SensorRecord* rec = mActiveSensors.valueFor(handle);
@@ -559,15 +583,15 @@ bool SensorService::SensorRecord::removeConnection(
 // ---------------------------------------------------------------------------
 
 SensorService::SensorEventConnection::SensorEventConnection(
-        const sp<SensorService>& service, uid_t uid)
-    : mService(service), mChannel(new BitTube()), mUid(uid)
+    const sp<SensorService>& service, uid_t uid)
+: mService(service), mChannel(new BitTube()), mUid(uid)
 {
 }
 
 SensorService::SensorEventConnection::~SensorEventConnection()
 {
-    ALOGD_IF(DEBUG_CONNECTIONS, "~SensorEventConnection(%p)", this);
-    mService->cleanupConnection(this);
+  ALOGD_IF(DEBUG_CONNECTIONS, "~SensorEventConnection(%p)", this);
+  mService->cleanupConnection(this);
 }
 
 void SensorService::SensorEventConnection::onFirstRef()
@@ -575,36 +599,40 @@ void SensorService::SensorEventConnection::onFirstRef()
 }
 
 bool SensorService::SensorEventConnection::addSensor(int32_t handle) {
-    Mutex::Autolock _l(mConnectionLock);
-    if (mSensorInfo.indexOf(handle) < 0) {
-        mSensorInfo.add(handle);
-        return true;
-    }
-    return false;
+  Mutex::Autolock _l(mConnectionLock);
+  ALOGD("SensorEventConnection::addSensor(%d)", handle);
+  if (mSensorInfo.indexOf(handle) < 0) {
+    mSensorInfo.add(handle);
+    return true;
+  }
+  return false;
 }
 
 bool SensorService::SensorEventConnection::removeSensor(int32_t handle) {
-    Mutex::Autolock _l(mConnectionLock);
-    if (mSensorInfo.remove(handle) >= 0) {
-        return true;
-    }
-    return false;
+  Mutex::Autolock _l(mConnectionLock);
+  ALOGD("SensorEventConnection::removeSensor(%d)", handle);
+  if (mSensorInfo.remove(handle) >= 0) {
+    return true;
+  }
+  return false;
 }
 
 bool SensorService::SensorEventConnection::hasSensor(int32_t handle) const {
-    Mutex::Autolock _l(mConnectionLock);
-    return mSensorInfo.indexOf(handle) >= 0;
+  Mutex::Autolock _l(mConnectionLock);
+  return mSensorInfo.indexOf(handle) >= 0;
 }
 
 bool SensorService::SensorEventConnection::hasAnySensor() const {
-    Mutex::Autolock _l(mConnectionLock);
-    return mSensorInfo.size() ? true : false;
+  Mutex::Autolock _l(mConnectionLock);
+  return mSensorInfo.size() ? true : false;
 }
 
 status_t SensorService::SensorEventConnection::sendEvents(
         sensors_event_t const* buffer, size_t numEvents,
         sensors_event_t* scratch)
 {
+    ALOGD_IF(DEBUG_CONNECTIONS,
+        "SensorEventConnection::sendEvents called");
     // filter out events not for this connection
     size_t count = 0;
     if (scratch) {
@@ -612,6 +640,12 @@ status_t SensorService::SensorEventConnection::sendEvents(
         size_t i=0;
         while (i<numEvents) {
             const int32_t curr = buffer[i].sensor;
+            ALOGD_IF(DEBUG_CONNECTIONS,
+                "SensorEventConnection processing event from sensor=%d",
+                curr);
+            ALOGD_IF(DEBUG_CONNECTIONS,
+                "SensorEventConnection mSensorInfo.indexOf(sensor)=%d",
+                mSensorInfo.indexOf(curr));
             if (mSensorInfo.indexOf(curr) >= 0) {
                 do {
                     scratch[count++] = buffer[i++];
@@ -625,6 +659,9 @@ status_t SensorService::SensorEventConnection::sendEvents(
         count = numEvents;
     }
 
+    ALOGD_IF(DEBUG_CONNECTIONS,
+        "SensorEventConnection, event count after filtering = %d",
+        count);
     // NOTE: ASensorEvent and sensors_event_t are the same type
     ssize_t size = SensorEventQueue::write(mChannel,
             reinterpret_cast<ASensorEvent const*>(scratch), count);

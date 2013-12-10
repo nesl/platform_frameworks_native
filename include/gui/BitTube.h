@@ -57,7 +57,7 @@ public:
     }
 
 private:
-    int mSendFd;
+    mutable int mSendFd;
     mutable int mReceiveFd;
 
     static ssize_t sendObjects(const sp<BitTube>& tube,

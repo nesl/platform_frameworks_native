@@ -25,6 +25,7 @@
 #include <binder/Parcel.h>
 #include <binder/IInterface.h>
 
+#include <gui/BitTube.h>
 #include <gui/Sensor.h>
 #include <gui/ISensorServer.h>
 #include <gui/ISensorEventConnection.h>
@@ -35,6 +36,7 @@ namespace android {
 enum {
     GET_SENSOR_LIST = IBinder::FIRST_CALL_TRANSACTION,
     CREATE_SENSOR_EVENT_CONNECTION,
+    GET_INPUT_CHANNEL,
 };
 
 class BpSensorServer : public BpInterface<ISensorServer>
@@ -68,6 +70,17 @@ public:
         remote()->transact(CREATE_SENSOR_EVENT_CONNECTION, data, &reply);
         return interface_cast<ISensorEventConnection>(reply.readStrongBinder());
     }
+
+    virtual sp<BitTube> getInputChannel()
+    {
+        ALOGD("BpSensorServer::getInputChannel");
+        Parcel data, reply;
+        data.writeInterfaceToken(ISensorServer::getInterfaceDescriptor());
+        remote()->transact(GET_INPUT_CHANNEL, data, &reply);
+        sp<BitTube> channel(new BitTube(reply));
+        ALOGD("BpSensorServer::getInputChannel after remote transact, local channel=%d", channel.get());
+        return channel.get();
+    }
 };
 
 IMPLEMENT_META_INTERFACE(SensorServer, "android.gui.SensorServer");
@@ -92,6 +105,15 @@ status_t BnSensorServer::onTransact(
             CHECK_INTERFACE(ISensorServer, data, reply);
             sp<ISensorEventConnection> connection(createSensorEventConnection());
             reply->writeStrongBinder(connection->asBinder());
+            return NO_ERROR;
+        } break;
+        case GET_INPUT_CHANNEL: {
+            ALOGD("BnSensorServer::onTransact called");
+            CHECK_INTERFACE(ISensorServer, data, reply);
+            sp<BitTube> channel(getInputChannel());
+            ALOGD("BnSensorServer::onTransact channel: %d", channel.get());
+            channel->writeToParcel(reply);
+            ALOGD("BnSensorServer::onTransact done");
             return NO_ERROR;
         } break;
     }
