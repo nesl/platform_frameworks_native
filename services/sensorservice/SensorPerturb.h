@@ -32,6 +32,8 @@ private:
     float getNoise(const Perturb* perturb);
     void perturbData(sensors_event_t* scratch, size_t start_pos,
             size_t end_pos, const int32_t sensorType, const Param* param);
+    void playback(sensors_event_t* scratch, size_t start_pos,
+            size_t end_pos, const int32_t sensorType, sensors_event_t *pbuf);;
     void constantData(sensors_event_t* scratch, size_t start_pos,
             size_t end_pos, const int32_t sensorType, const Param* param);
     void suppressData(sensors_event_t* scratch, size_t start_pos,

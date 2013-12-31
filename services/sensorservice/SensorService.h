@@ -38,7 +38,7 @@
 // ---------------------------------------------------------------------------
 
 #define DEBUG_CONNECTIONS   false
-#define NUMBER_OF_SENSORS   8
+#define NUMBER_OF_SENSORS   16
 #define QUEUE_LENGTH        20
 
 struct sensors_poll_device_t;
@@ -151,12 +151,12 @@ public:
     static double total_time;
     static double last_time;
     static int count_perturb;
+    static unsigned int print_limit;
     struct {
-        sensors_event_t buffer[QUEUE_LENGTH];
-        int f, r;
+        sensors_event_t event_queue[QUEUE_LENGTH];
+        int f, r, cnt;
     } buffer[NUMBER_OF_SENSORS];
     int copy_perturb_buffer(sensors_event_t buf[]);
-    int z;
 private:
     bool enque(sensors_event_t event);
     bool deque(int index, sensors_event_t &buf);

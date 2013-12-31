@@ -199,6 +199,21 @@ void SensorPerturb::perturbData(
     }
 }
 
+void SensorPerturb::playback(
+        sensors_event_t* scratch, size_t start_pos, size_t end_pos,
+        const int32_t sensorType, sensors_event_t *pbuf)
+{
+    size_t i,j;
+
+    if (pbuf[sensorType].type == -1)
+        return;
+
+    ALOGD("IPS: perturbing sensor type %d", pbuf[sensorType].data[2]);
+    for(i = start_pos; i <= end_pos; i++) {
+        scratch[i] = pbuf[sensorType];
+    }
+}
+
 void SensorPerturb::constantData(
         sensors_event_t* scratch, size_t start_pos, size_t end_pos, 
         const int32_t sensorType, const Param* param) {
@@ -388,6 +403,10 @@ size_t SensorPerturb::transformData(
 
     //ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
 
+    if (!strcmp(pkgName, "com.example.playback"))
+        return 0;
+
+    ALOGD("Perturbing data for %s", pkgName);
     while (i < count) {
         const int32_t sensorType = scratch[i].type;
         start_pos = i;
@@ -398,6 +417,7 @@ size_t SensorPerturb::transformData(
         }
         end_pos = i-1;
 
+        playback(scratch, start_pos, end_pos, sensorType, pbuf);
         // Transfrom data
         const ruleKey_t* mKey = mPrivacyRules->generateKey(uid, sensorType, pkgName);
         const Rule* rule = mPrivacyRules->findRule(mKey);

@@ -76,9 +76,77 @@ namespace android {
 double SensorService::total_time;
 double SensorService::last_time;
 int SensorService::count_perturb;
+unsigned int SensorService::print_limit;
+
+bool SensorService::is_empty(int index)
+{
+    if (!buffer[index].cnt)
+        return true;
+    else
+        return false;
+}
+
+bool SensorService::is_full(int index)
+{
+    if (buffer[index].cnt == QUEUE_LENGTH)
+        return true;
+    else
+        return false;
+}
+
+sensors_event_t SensorService::_deque(int index)
+{
+    sensors_event_t buf;
+    int &f = buffer[index].f;
+
+    buf = buffer[index].event_queue[f];
+    f = (f + 1) % QUEUE_LENGTH;
+    buffer[index].cnt--;
+
+    return buf;
+}
+
+bool SensorService::deque(int index, sensors_event_t &buf)
+{
+    if(is_empty(index))
+        return false;
+    buf = _deque(index);
+    return true;
+}
+
+void SensorService::_enque(sensors_event_t event)
+{
+    int &r = buffer[event.type].r;
+
+    buffer[event.type].event_queue[r] = event;
+    r = (r + 1) % QUEUE_LENGTH;
+    buffer[event.type].cnt++;
+}
+
+bool SensorService::enque(sensors_event_t event)
+{
+    if (is_full(event.type))
+        return false;
+    _enque(event);
+    return true;
+}
+
+int SensorService::copy_perturb_buffer(sensors_event_t buf[])
+{
+    int i;
+    for (i = 0; i < NUMBER_OF_SENSORS; i++) {
+        if (deque(i, buf[i]) == false)
+            buf[i].type = -1;
+        else
+            ALOGD("IPS:cp timestamp %lld type %d float values =%f %f %f",
+                    buf[i].timestamp, buf[i].type,
+                    buf[i].data[0], buf[i].data[1], buf[i].data[2]);
+    }
+    return 0;
+}
 
 int
-dup_sensor(sensors_event_t *event, ASensorEvent aevent)
+sensor_dup(sensors_event_t *event, ASensorEvent aevent)
 {
     int i;
 
@@ -100,12 +168,13 @@ dup_sensor(sensors_event_t *event, ASensorEvent aevent)
 }
 
 SensorService::SensorService()
-    : mInitCheck(NO_INIT), z(10)
+    : mInitCheck(NO_INIT)
 {
     // Initialize the queue
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
         buffer[i].f = 0;
         buffer[i].r = 0;
+        buffer[i].cnt = 0;
     }
 }
 
@@ -126,14 +195,18 @@ bool SensorService::threadLoop_pb()
         if (connection != 0 &&
                 !strcmp(connection->getPkgName(), "com.example.playback")) {
             ret = connection->recvEvents(&event);
-            if (ret == 0)
+            if (ret == 0) {
+                enque(event);
                 ALOGD("IPS:timestamp %lld type %d float values =%f %f %f",
                         event.timestamp, event.type,
                         event.data[0], event.data[1], event.data[2]);
-            else if (ret < 0)
+            } else if (ret < 0)
                 ALOGD("IPS: error %s", strerror(-ret));
         }
     }
+    print_limit++;
+    if (print_limit % 1000000000 == 0)
+        ALOGD("IPS: threadLoop_pb");
     return true;
 }
 
@@ -315,75 +388,6 @@ status_t SensorService::dump(int fd, const Vector<String16>& args)
     }
     write(fd, result.string(), result.size());
     return NO_ERROR;
-}
-
-bool SensorService::is_empty(int index)
-{
-    int r = buffer[index].r;
-    int f = buffer[index].f;
-
-    if (f == r)
-        return true;
-    else
-        return false;
-}
-
-bool SensorService::is_full(int index)
-{
-    int r = buffer[index].r;
-    int f = buffer[index].f;
-
-    if (((r + 1) % QUEUE_LENGTH) == f)
-        return true;
-    else
-        return false;
-}
-
-sensors_event_t SensorService::_deque(int index)
-{
-    sensors_event_t buf;
-    int &f = buffer[index].f;
-
-    buf = buffer[index].buffer[f];
-    f = (f + 1) % QUEUE_LENGTH;
-
-    return buf;
-}
-
-bool SensorService::deque(int index, sensors_event_t &buf)
-{
-    if(is_empty(index))
-        return false;
-    else
-        buf = _deque(index);
-    return true;
-}
-
-void SensorService::_enque(sensors_event_t event)
-{
-    int &r = buffer[event.type].r;
-
-    buffer[event.type].buffer[r] = event;
-    r = (r + 1) % QUEUE_LENGTH;
-}
-
-bool SensorService::enque(sensors_event_t event)
-{
-    if (is_full(event.type))
-        return false;
-    else
-        _enque(event);
-    return true;
-}
-
-int SensorService::copy_perturb_buffer(sensors_event_t buf[])
-{
-    int i;
-    for (i = 0; i < NUMBER_OF_SENSORS; i++)
-        if (deque(i, buf[i]) == false)
-            buf[i].type = -1;
-
-    return 0;
 }
 
 bool SensorService::threadLoop()
@@ -757,7 +761,7 @@ SensorService::SensorEventConnection::SensorEventConnection(
         const sp<SensorService>& service, uid_t uid)
     : mService(service), mChannel(new BitTube()), mUid(uid), mPkgName(SensorService::SensorEventConnection::readPkgName())
 {
-    ALOGD("z=%d Adding a new connection %ld:%s", service->z, uid, mPkgName);
+    ALOGD("Adding a new connection %ld:%s", uid, mPkgName);
 }
 
 SensorService::SensorEventConnection::~SensorEventConnection()
@@ -872,7 +876,8 @@ status_t SensorService::SensorEventConnection::sendEvents(
     // Check to exclude system service. Will do it in ruleApp.
     //if(getUid() >= 10000) { 
     count_perturb++;
-    count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules, pbuf);
+    //count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules, pbuf);
+    mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules, pbuf);
     //}
 
     // NOTE: ASensorEvent and sensors_event_t are the same type
@@ -902,7 +907,7 @@ status_t SensorService::SensorEventConnection::recvEvents(sensors_event_t *event
     else if (size < 0)
         return size;
 
-    dup_sensor(event, aevent);
+    sensor_dup(event, aevent);
 
     return 0;
 }
