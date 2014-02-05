@@ -17,7 +17,7 @@ message Perturb {
         GAUSSIAN = 1;
         UNIFORM = 2;
         EXPONENTIAL = 3;
-    }   
+    }
     required DistributionType distType = 6;
 }
 
@@ -58,10 +58,10 @@ message Action {
     enum ActionType {
         ACTION_SUPPRESS = 1;
         ACTION_CONSTANT = 2;
-        ACTION_DELAY = 3;
+        ACTION_PLAYBACK = 3;
         ACTION_PERTURB = 4;
         ACTION_PASSTHROUGH = 5;
-    }   
+    }
     required ActionType actionType = 1;
     optional Param param = 2;
 }

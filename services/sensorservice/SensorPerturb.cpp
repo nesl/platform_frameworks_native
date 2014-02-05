@@ -199,19 +199,21 @@ void SensorPerturb::perturbData(
     }
 }
 
-void SensorPerturb::playback(
-        sensors_event_t* scratch, size_t start_pos, size_t end_pos,
-        const int32_t sensorType, sensors_event_t *pbuf)
-{
-    size_t i,j;
-
-    if (pbuf[sensorType].type == -1)
-        return;
-
-    ALOGD("IPS: perturbing sensor type %d", pbuf[sensorType].data[2]);
-    for(i = start_pos; i <= end_pos; i++) {
-        scratch[i] = pbuf[sensorType];
+int SensorPerturb::playbackData(
+        sensors_event_t* scratch, size_t start_pos, size_t end_pos, 
+        const int32_t sensorType, sensors_event_t* pbuf, size_t count) {
+    int suppressCount = 0;
+    if(pbuf[sensorType].type == -1) {
+        SensorPerturb::suppressData(scratch, start_pos, end_pos, count);
+        suppressCount = end_pos - start_pos + 1;
+    } else {
+        // check this part as right now buffer has only one element
+        scratch[start_pos] = pbuf[sensorType];
+        start_pos++;
+        SensorPerturb::suppressData(scratch, start_pos, end_pos, count);
+        suppressCount = end_pos - start_pos + 1;
     }
+    return suppressCount;
 }
 
 void SensorPerturb::constantData(
@@ -395,7 +397,7 @@ void SensorPerturb::updateCounters(size_t count, size_t start_pos,
 
 size_t SensorPerturb::transformData(
         uid_t uid, const char* pkgName, sensors_event_t* scratch,
-        size_t count, PrivacyRules* mPrivacyRules, sensors_event_t *pbuf) {
+        size_t count, PrivacyRules* mPrivacyRules, sensors_event_t* pbuf) {
 
     size_t start_pos, end_pos;
     size_t i = 0;
@@ -437,8 +439,11 @@ size_t SensorPerturb::transformData(
                         SensorPerturb::constantData(scratch, start_pos, end_pos, sensorType, param);
                         //ALOGD("Constant Data");
                         break;
-                    case Action::ACTION_DELAY:
-                        //ALOGD("Delay Data");
+                    case Action::ACTION_PLAYBACK:
+                        suppressCount = SensorPerturb::playbackData(scratch, start_pos, end_pos, sensorType, pbuf, count);
+                        //suppressCount is equal to number of deletions
+                        i = end_pos - suppressCount + 1;
+                        count = count - suppressCount;
                         break;
                     case Action::ACTION_PERTURB:
                         SensorPerturb::perturbData(scratch, start_pos, end_pos, sensorType, param);
