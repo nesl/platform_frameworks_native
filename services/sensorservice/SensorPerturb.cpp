@@ -400,15 +400,11 @@ size_t SensorPerturb::transformData(
         size_t count, PrivacyRules* mPrivacyRules, sensors_event_t* pbuf) {
 
     size_t start_pos, end_pos;
-    size_t i = 0;
+    size_t i = 0, suppressCount ;
     bool toUpdateCounter;
 
     //ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
 
-    if (!strcmp(pkgName, "com.example.playback"))
-        return 0;
-
-    ALOGD("Perturbing data for %s", pkgName);
     while (i < count) {
         const int32_t sensorType = scratch[i].type;
         start_pos = i;
@@ -419,7 +415,6 @@ size_t SensorPerturb::transformData(
         }
         end_pos = i-1;
 
-        playback(scratch, start_pos, end_pos, sensorType, pbuf);
         // Transfrom data
         const ruleKey_t* mKey = mPrivacyRules->generateKey(uid, sensorType, pkgName);
         const Rule* rule = mPrivacyRules->findRule(mKey);
@@ -440,7 +435,8 @@ size_t SensorPerturb::transformData(
                         //ALOGD("Constant Data");
                         break;
                     case Action::ACTION_PLAYBACK:
-                        suppressCount = SensorPerturb::playbackData(scratch, start_pos, end_pos, sensorType, pbuf, count);
+                        suppressCount = SensorPerturb::playbackData(scratch, start_pos, end_pos,
+                                sensorType, pbuf, count);
                         //suppressCount is equal to number of deletions
                         i = end_pos - suppressCount + 1;
                         count = count - suppressCount;

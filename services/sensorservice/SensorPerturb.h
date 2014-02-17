@@ -43,6 +43,8 @@ private:
     void PrintSensorCounters();
     void updateCounters(size_t count, size_t start_pos,
         size_t end_pos, uid_t uid, const char* pkgName, const int32_t sensorType);
+    int playbackData(sensors_event_t* scratch, size_t start_pos, size_t end_pos, 
+            const int32_t sensorType, sensors_event_t* pbuf, size_t count);
 public:
     mutable Mutex mLock;
     void initCounter();

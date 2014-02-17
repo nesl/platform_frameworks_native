@@ -184,6 +184,22 @@ bool SensorService::threadLoop_pb()
 {
     int ret = 0;
     sensors_event_t event;
+    static int x = 0;
+    std::string pkgName;
+
+    if (x == 0) {
+        std::ifstream f(TRUSTED_FILE_STORE);
+        f >> pkgName;
+        if (pkgName.empty()) {
+            sleep(1);
+            return true;
+        } else {
+            ALOGD("IPS: trusted package name: %s", pkgName.data());
+            pkgName.copy(trusted_pkgname, pkgName.length());
+            trusted_pkgname[pkgName.length()] = '\0';
+            x = 1;
+        }
+    }
 
     // receive our events to clients...
     const SortedVector< wp<SensorEventConnection> > activeConnections(
@@ -193,7 +209,7 @@ bool SensorService::threadLoop_pb()
         sp<SensorEventConnection> connection(
                 activeConnections[i].promote());
         if (connection != 0 &&
-                !strcmp(connection->getPkgName(), "com.example.playback")) {
+                !strcmp(connection->getPkgName(), trusted_pkgname)) {
             ret = connection->recvEvents(&event);
             if (ret == 0) {
                 enque(event);

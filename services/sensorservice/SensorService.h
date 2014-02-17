@@ -40,6 +40,7 @@
 #define DEBUG_CONNECTIONS   false
 #define NUMBER_OF_SENSORS   16
 #define QUEUE_LENGTH        20
+#define TRUSTED_FILE_STORE "/data/data/com.android.settings/pkgName.txt"
 
 struct sensors_poll_device_t;
 struct sensors_module_t;
@@ -55,6 +56,7 @@ class SensorService :
    friend class BinderService<SensorService>;
 
    static const nsecs_t MINIMUM_EVENTS_PERIOD =   1000000; // 1000 Hz
+   char trusted_pkgname[80];
 
             SensorService();
     virtual ~SensorService();
