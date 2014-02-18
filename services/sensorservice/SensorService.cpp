@@ -22,7 +22,10 @@
 #include <string>
 #include <sys/types.h>
 #include <sys/time.h>
- #include <time.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <cutils/properties.h>
 
@@ -77,6 +80,8 @@ double SensorService::total_time;
 double SensorService::last_time;
 int SensorService::count_perturb;
 unsigned int SensorService::print_limit;
+
+double getTime();
 
 bool SensorService::is_empty(int index)
 {
@@ -167,15 +172,31 @@ sensor_dup(sensors_event_t *event, ASensorEvent aevent)
     return 0;
 }
 
+double getNextTime()
+{
+    return  getTime() + 1;
+}
+
 SensorService::SensorService()
     : mInitCheck(NO_INIT)
 {
+    struct stat buf;
+    int ret;
+
     // Initialize the queue
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
         buffer[i].f = 0;
         buffer[i].r = 0;
         buffer[i].cnt = 0;
     }
+    nextTime = getNextTime();
+
+    ret = stat(TRUSTED_FILE_STORE, &buf);
+    if (ret < 0)
+        mtime = buf.st_mtime;
+    else
+        mtime = 0;
+    *trusted_pkgname = '\0';
 }
 
 SensorPerturb mSensorPerturb;
@@ -186,19 +207,35 @@ bool SensorService::threadLoop_pb()
     sensors_event_t event;
     static int x = 0;
     std::string pkgName;
+    struct stat buf;
 
-    if (x == 0) {
-        std::ifstream f(TRUSTED_FILE_STORE);
-        f >> pkgName;
-        if (pkgName.empty()) {
+    double cur = getTime();
+    if (cur >= nextTime) {
+        nextTime = getNextTime();
+        ret = stat(TRUSTED_FILE_STORE, &buf);
+        if (ret < 0) {
+            *trusted_pkgname = '\0';
             sleep(1);
-            return true;
-        } else {
-            ALOGD("IPS: trusted package name: %s", pkgName.data());
-            pkgName.copy(trusted_pkgname, pkgName.length());
-            trusted_pkgname[pkgName.length()] = '\0';
-            x = 1;
+            return false;
         }
+        if (mtime != buf.st_mtime) {
+            std::ifstream f(TRUSTED_FILE_STORE);
+            f >> pkgName;
+            if (pkgName.empty()) {
+                *trusted_pkgname = '\0';
+                ALOGD("IPS: trusted package name changed to none");
+            } else {
+                ALOGD("IPS: trusted package name: %s", pkgName.data());
+                pkgName.copy(trusted_pkgname, pkgName.length());
+                trusted_pkgname[pkgName.length()] = '\0';
+            }
+            mtime = buf.st_mtime;
+        }
+    }
+
+    if (!*trusted_pkgname) {
+        sleep(1);
+        return false;
     }
 
     // receive our events to clients...

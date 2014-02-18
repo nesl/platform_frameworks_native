@@ -57,6 +57,8 @@ class SensorService :
 
    static const nsecs_t MINIMUM_EVENTS_PERIOD =   1000000; // 1000 Hz
    char trusted_pkgname[80];
+   double nextTime;
+   time_t mtime;
 
             SensorService();
     virtual ~SensorService();
