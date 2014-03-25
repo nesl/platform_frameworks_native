@@ -199,6 +199,18 @@ void SensorPerturb::perturbData(
     }
 }
 
+bool
+playbackCopyVec(sensors_event_t* dest, sensors_event_t* src,
+        const int32_t sensorType, size_t start_pos, size_t end_pos)
+{
+        for(int i = start_pos; i <= end_pos; i++) {
+            dest[i].data[0] = src[sensorType].data[0];
+            dest[i].data[1] = src[sensorType].data[1];
+            dest[i].data[2] = src[sensorType].data[2];
+        }
+        return 0;
+}
+
 int SensorPerturb::playbackData(
         sensors_event_t* scratch, size_t start_pos, size_t end_pos, 
         const int32_t sensorType, sensors_event_t* pbuf, size_t count) {
@@ -207,11 +219,12 @@ int SensorPerturb::playbackData(
         SensorPerturb::suppressData(scratch, start_pos, end_pos, count);
         suppressCount = end_pos - start_pos + 1;
     } else {
+        playbackCopyVec(scratch, pbuf, sensorType, start_pos, end_pos);
         // check this part as right now buffer has only one element
-        scratch[start_pos] = pbuf[sensorType];
-        start_pos++;
-        SensorPerturb::suppressData(scratch, start_pos, end_pos, count);
-        suppressCount = end_pos - start_pos + 1;
+//      scratch[start_pos] = pbuf[sensorType];
+//      start_pos++;
+//      SensorPerturb::suppressData(scratch, start_pos, end_pos, count);
+//      suppressCount = end_pos - start_pos + 1;
     }
     return suppressCount;
 }
@@ -403,8 +416,6 @@ size_t SensorPerturb::transformData(
     size_t i = 0, suppressCount ;
     bool toUpdateCounter;
 
-    //ALOGD("transformData: uid = %d, pkgName = %s, count = %d\n", uid, pkgName, count);
-
     while (i < count) {
         const int32_t sensorType = scratch[i].type;
         start_pos = i;
@@ -431,12 +442,19 @@ size_t SensorPerturb::transformData(
                         //ALOGD("Suppressing Data");
                         break;
                     case Action::ACTION_CONSTANT: 
-                        SensorPerturb::constantData(scratch, start_pos, end_pos, sensorType, param);
-                        //ALOGD("Constant Data");
-                        break;
-                    case Action::ACTION_PLAYBACK:
-                        suppressCount = SensorPerturb::playbackData(scratch, start_pos, end_pos,
-                                sensorType, pbuf, count);
+//                      SensorPerturb::constantData(scratch, start_pos, end_pos, sensorType, param);
+//                      //ALOGD("Constant Data");
+//                      break;
+//                  case Action::ACTION_PLAYBACK:
+                        suppressCount = SensorPerturb::playbackData(scratch,
+                                            start_pos, end_pos, sensorType,
+                                            pbuf, count);
+                        if (pbuf[sensorType].type == -1)
+                                ALOGD("Playback:: type:%d value:%f", sensorType, 
+                                        scratch[start_pos].data[0]);
+                        else
+                                ALOGD("Playback:: type:%d pbvalue:%f value:%f", sensorType, 
+                                        pbuf[sensorType].data[0], scratch[start_pos].data[0]);
                         //suppressCount is equal to number of deletions
                         i = end_pos - suppressCount + 1;
                         count = count - suppressCount;

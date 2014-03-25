@@ -798,6 +798,7 @@ int Thread::_threadLoop_pb(void* user)
     wp<Thread> weak(strong);
     self->mHoldSelf.clear();
 
+    ALOGD("Starting Playback thread");
     do {
         self->threadLoop_pb();
         //clear strong pointer so that the thread can die
