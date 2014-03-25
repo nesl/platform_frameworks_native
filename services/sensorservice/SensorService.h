@@ -161,11 +161,13 @@ public:
         int f, r, cnt;
     } buffer[NUMBER_OF_SENSORS];
     int copy_perturb_buffer(sensors_event_t buf[]);
+    int pop_unused_perturb_buffer(sensors_event_t buf[]);
 private:
     bool enque(sensors_event_t event);
     bool deque(int index, sensors_event_t &buf);
     bool is_full(int index);
     bool is_empty(int index);
+    bool mod_deque(int index, sensors_event_t &buf);
     virtual bool threadLoop_pb();
 };
 

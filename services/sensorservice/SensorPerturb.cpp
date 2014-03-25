@@ -219,6 +219,7 @@ int SensorPerturb::playbackData(
         SensorPerturb::suppressData(scratch, start_pos, end_pos, count);
         suppressCount = end_pos - start_pos + 1;
     } else {
+        pbuf[sensorType].reserved0 = 200;
         playbackCopyVec(scratch, pbuf, sensorType, start_pos, end_pos);
         // check this part as right now buffer has only one element
 //      scratch[start_pos] = pbuf[sensorType];
@@ -439,22 +440,23 @@ size_t SensorPerturb::transformData(
                         i = start_pos;
                         count = count - (end_pos - start_pos + 1);
                         toUpdateCounter = false;
-                        //ALOGD("Suppressing Data");
+                        ALOGD("Suppressing Data");
                         break;
                     case Action::ACTION_CONSTANT: 
-//                      SensorPerturb::constantData(scratch, start_pos, end_pos, sensorType, param);
-//                      //ALOGD("Constant Data");
-//                      break;
-//                  case Action::ACTION_PLAYBACK:
+                        SensorPerturb::constantData(scratch, start_pos, end_pos, sensorType, param);
+                        //ALOGD("Constant Data");
+                        break;
+                    case Action::ACTION_PLAYBACK:
                         suppressCount = SensorPerturb::playbackData(scratch,
                                             start_pos, end_pos, sensorType,
                                             pbuf, count);
-                        if (pbuf[sensorType].type == -1)
-                                ALOGD("Playback:: type:%d value:%f", sensorType, 
-                                        scratch[start_pos].data[0]);
-                        else
-                                ALOGD("Playback:: type:%d pbvalue:%f value:%f", sensorType, 
-                                        pbuf[sensorType].data[0], scratch[start_pos].data[0]);
+                        if (pbuf[sensorType].type == -1) {
+                            toUpdateCounter = false;
+                            ALOGD("Playback:: type:%d value:%f", sensorType, 
+                                    scratch[start_pos].data[0]);
+                        } else
+                            ALOGD("Playback:: type:%d pbvalue:%f value:%f", sensorType, 
+                                    pbuf[sensorType].data[0], scratch[start_pos].data[0]);
                         //suppressCount is equal to number of deletions
                         i = end_pos - suppressCount + 1;
                         count = count - suppressCount;

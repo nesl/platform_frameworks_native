@@ -119,6 +119,19 @@ bool SensorService::deque(int index, sensors_event_t &buf)
     return true;
 }
 
+// The idea here is that we 'll deque the sensor data but
+// will not increment the f pointer. The increment will
+// happen only if the data is consumed.
+bool SensorService::mod_deque(int index, sensors_event_t &buf)
+{
+    if(is_empty(index))
+        return false;
+
+    int f = buffer[index].f;
+    buf = buffer[index].event_queue[f];
+    return true;
+}
+
 void SensorService::_enque(sensors_event_t event)
 {
     int &r = buffer[event.type].r;
@@ -136,16 +149,29 @@ bool SensorService::enque(sensors_event_t event)
     return true;
 }
 
+int SensorService::pop_unused_perturb_buffer(sensors_event_t buf[])
+{
+    int i;
+    for (i = 0; i < NUMBER_OF_SENSORS; i++) {
+        if (buf[i].type != -1 && buf[i].reserved0 == 200)
+            deque(i, buf[i]);
+    }
+    return 0;
+}
+
 int SensorService::copy_perturb_buffer(sensors_event_t buf[])
 {
     int i;
     for (i = 0; i < NUMBER_OF_SENSORS; i++) {
-        if (deque(i, buf[i]) == false)
+//      if (deque(i, buf[i]) == false)
+        if (mod_deque(i, buf[i]) == false)
             buf[i].type = -1;
-        else
+        else {
+            buf[i].reserved0 = 100;
             ALOGD("IPS:cp timestamp %lld type %d float values =%f %f %f",
                     buf[i].timestamp, buf[i].type,
                     buf[i].data[0], buf[i].data[1], buf[i].data[2]);
+        }
     }
     return 0;
 }
@@ -520,6 +546,9 @@ bool SensorService::threadLoop()
                 connection->sendEvents(buffer, count, scratch, false, pbuf);
             }
         }
+
+        // remove only those elements from the playback buffer that were used.
+        pop_unused_perturb_buffer(pbuf);
 
     } while (count >= 0 || Thread::exitPending());
 
@@ -929,8 +958,8 @@ status_t SensorService::SensorEventConnection::sendEvents(
     // Check to exclude system service. Will do it in ruleApp.
     //if(getUid() >= 10000) { 
     count_perturb++;
-    //count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules, pbuf);
-    mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules, pbuf);
+    count = mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules, pbuf);
+    //mSensorPerturb.transformData(getUid(), getPkgName(), scratch, count, mPrivacyRules, pbuf);
     //}
 
     // NOTE: ASensorEvent and sensors_event_t are the same type
